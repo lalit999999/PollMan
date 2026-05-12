@@ -5,6 +5,7 @@ import {
     publishPollResults,
     submitPollResponse,
     getPollAnalytics,
+    logPollAccess,
 } from "../services/poll.service.js";
 
 export async function handleCreatePoll(req, res) {
@@ -53,6 +54,17 @@ export async function handleGetPoll(req, res) {
     try {
         const { id } = req.params;
         const poll = await getPollById(id, req.user?._id);
+
+        await logPollAccess({
+            pollId: id,
+            userId: req.user?._id || null,
+            action: "view",
+            metadata: {
+                area: "poll-details",
+            },
+            ipAddress: req.ip || req.connection.remoteAddress || null,
+            userAgent: req.get("user-agent") || null,
+        });
 
         return res.status(200).json({
             success: true,
@@ -154,6 +166,17 @@ export async function handleGetAnalytics(req, res) {
         const { id } = req.params;
 
         const analytics = await getPollAnalytics(id, req.user._id);
+
+        await logPollAccess({
+            pollId: id,
+            userId: req.user?._id || null,
+            action: "view",
+            metadata: {
+                area: "analytics",
+            },
+            ipAddress: req.ip || req.connection.remoteAddress || null,
+            userAgent: req.get("user-agent") || null,
+        });
 
         return res.status(200).json({
             success: true,

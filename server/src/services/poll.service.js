@@ -344,27 +344,32 @@ export async function getPollAnalytics(pollId, userId) {
         };
     });
 
+    const completionRate = responses.length > 0
+        ? Math.round(
+            (responses.filter((r) => r.completionPercentage === 100).length /
+                responses.length) *
+            100,
+        )
+        : 0;
+
+    const averageCompletion = responses.length > 0
+        ? Math.round(
+            responses.reduce((sum, r) => sum + r.completionPercentage, 0) /
+            responses.length,
+        )
+        : 0;
+
     return {
         pollId,
         title: poll.title,
         totalResponses: responses.length,
-        completionRate: responses.length > 0
-            ? Math.round(
-                (responses.filter((r) => r.completionPercentage === 100).length /
-                    responses.length) *
-                100,
-            )
-            : 0,
-        averageCompletion:
-            responses.length > 0
-                ? Math.round(
-                    responses.reduce((sum, r) => sum + r.completionPercentage, 0) /
-                    responses.length,
-                )
-                : 0,
+        completionRate,
+        completionPercentage: averageCompletion,
+        averageCompletion,
         expiresAt: poll.expiresAt,
         resultsPublished: poll.resultsPublished,
         questionAnalytics,
+        timeline: buildTimelineBuckets(responses),
         recentResponses: responses
             .slice(-10)
             .reverse()
