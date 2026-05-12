@@ -12,11 +12,11 @@ import { Github } from "lucide-react";
 
 export default function Login() {
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = "http://localhost:3300/api/auth/google";
   };
 
   const handleGithubLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/github";
+    window.location.href = "http://localhost:3300/api/auth/github";
   };
 
   return (
@@ -28,11 +28,13 @@ export default function Login() {
 
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3 w-fit">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
-              P
-            </div>
+            <img
+              src="/content/logo.png"
+              alt="POLLMAN"
+              className="w-8 h-8 rounded-lg object-cover"
+            />
             <span className="font-semibold text-lg tracking-tight">
-              PollForm
+              POLLMAN
             </span>
           </Link>
         </div>

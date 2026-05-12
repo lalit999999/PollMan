@@ -1,16 +1,16 @@
 import { Outlet, NavLink, useNavigate } from "react-router";
 import { useTheme } from "next-themes";
-import { 
-  LayoutDashboard, 
-  ListChecks, 
-  PlusCircle, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  ListChecks,
+  PlusCircle,
+  BarChart3,
   Settings,
   LogOut,
   Sun,
   Moon,
   Menu,
-  X
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
@@ -32,7 +32,7 @@ export default function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
-  
+
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
@@ -41,10 +41,12 @@ export default function DashboardLayout() {
   const SidebarContent = () => (
     <>
       <div className="flex items-center gap-3 px-6 py-8">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
-          P
-        </div>
-        <span className="font-semibold text-lg tracking-tight">PollForm</span>
+        <img
+          src="/content/logo.png"
+          alt="POLLMAN"
+          className="w-8 h-8 rounded-lg object-cover"
+        />
+        <span className="font-semibold text-lg tracking-tight">POLLMAN</span>
       </div>
 
       <nav className="flex-1 px-4 space-y-1">
@@ -54,12 +56,14 @@ export default function DashboardLayout() {
             to={item.path}
             end={item.end}
             onClick={() => setMobileOpen(false)}
-            className={({ isActive }) => cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-              isActive 
-                ? "bg-primary/10 text-primary" 
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )
+            }
           >
             <item.icon className="w-5 h-5" />
             {item.label}
@@ -71,17 +75,19 @@ export default function DashboardLayout() {
         <NavLink
           to="/app/settings"
           onClick={() => setMobileOpen(false)}
-          className={({ isActive }) => cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-            isActive 
-              ? "bg-primary/10 text-primary" 
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          )}
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              isActive
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )
+          }
         >
           <Settings className="w-5 h-5" />
           Settings
         </NavLink>
-        
+
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors"
@@ -128,14 +134,20 @@ export default function DashboardLayout() {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Navbar */}
         <header className="h-16 flex items-center justify-between px-4 sm:px-8 border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-30">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="md:hidden p-2 text-muted-foreground hover:text-foreground"
-            >
-              <Menu className="w-5 h-5" /> md:gap-4">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="md:hidden p-2 text-muted-foreground hover:text-foreground"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center gap-3 ml-auto">
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {theme === "dark" ? (
+                <Sun className="w-5 h-5" />
+              ) : (
+                <Moon className="w-5 h-5" />
+              )}
             </Button>
             <div className="flex items-center gap-2 px-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent border border-border flex items-center justify-center text-xs font-medium text-primary-foreground">
@@ -145,12 +157,7 @@ export default function DashboardLayout() {
                 <p className="text-sm font-medium">{user?.name}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
-            </div
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent border border-border" />
+            </div>
           </div>
         </header>
 

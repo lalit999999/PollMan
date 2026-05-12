@@ -3,7 +3,14 @@
  * Global state management for authentication
  */
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   getStoredUser,
   getStoredTokens,
@@ -57,35 +64,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const handleSetUser = (newUser: User | null) => {
+  const handleSetUser = useCallback((newUser: User | null) => {
     setUser(newUser);
-  };
+  }, []);
 
-  const handleSetTokens = (newAccessToken: string, refreshToken: string) => {
-    setAccessToken(newAccessToken);
-    setAuthData(user, {
-      accessToken: newAccessToken,
-      refreshToken,
-    });
-  };
+  // Only update in-memory token here. Persisting to localStorage is
+  // handled by the auth service (e.g. on OAuth callback) to avoid
+  // cyclical updates and unstable dependencies.
+  const handleSetTokens = useCallback(
+    (newAccessToken: string, _refreshToken: string) => {
+      setAccessToken(newAccessToken);
+    },
+    [],
+  );
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setUser(null);
     setAccessToken(null);
     setError(null);
     clearAuthData();
-  };
+  }, []);
 
-  const value: AuthContextType = {
-    user,
-    accessToken,
-    isAuthenticated: !!user && !!accessToken,
-    isLoading,
-    error,
-    setUser: handleSetUser,
-    setTokens: handleSetTokens,
-    logout: handleLogout,
-  };
+  const value: AuthContextType = useMemo(
+    () => ({
+      user,
+      accessToken,
+      isAuthenticated: !!user && !!accessToken,
+      isLoading,
+      error,
+      setUser: handleSetUser,
+      setTokens: handleSetTokens,
+      logout: handleLogout,
+    }),
+    [
+      user,
+      accessToken,
+      isLoading,
+      error,
+      handleSetUser,
+      handleSetTokens,
+      handleLogout,
+    ],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
