@@ -1,13 +1,5 @@
-import { motion } from "motion/react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Button } from "../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "../../components/ui/card";
 import { Github } from "lucide-react";
 
 export default function Login() {
@@ -26,27 +18,21 @@ export default function Login() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[80px] rounded-full" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/20 blur-[80px] rounded-full" />
 
-        <div className="relative z-10">
-          <Link to="/" className="flex items-center gap-3 w-fit">
-            <img
-              src="/content/logo.png"
-              alt="POLLMAN"
-              className="w-8 h-8 rounded-lg object-cover"
-            />
-            <span className="font-semibold text-lg tracking-tight">
-              POLLMAN
-            </span>
-          </Link>
-        </div>
-
-        <div className="relative z-10 space-y-4">
-          <h2 className="text-3xl font-bold">
-            Start gathering insights today.
-          </h2>
-          <p className="text-muted-foreground">
-            Join thousands of teams using PollForm to make data-driven
-            decisions.
-          </p>
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8 text-center">
+          <img
+            src="/content/logo.png"
+            alt="POLLMAN"
+            className="w-56 h-56 rounded-[8rem] object-cover shadow-2xl ring-1 ring-white/10"
+          />
+          <div className="space-y-4 max-w-sm">
+            <h2 className="text-3xl font-bold">
+              Start gathering insights today.
+            </h2>
+            <p className="text-muted-foreground">
+              Join thousands of teams using POLLMAN to make data-driven
+              decisions.
+            </p>
+          </div>
         </div>
       </div>
 
