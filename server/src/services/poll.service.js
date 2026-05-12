@@ -1,4 +1,62 @@
-import { Poll, Question, Response } from "../models/index.js";
+import { Poll, Question, Response, PollAccessLog } from "../models/index.js";
+
+export async function logPollAccess({
+    pollId,
+    userId = null,
+    action,
+    metadata = {},
+    ipAddress = null,
+    userAgent = null,
+}) {
+    try {
+        return await PollAccessLog.create({
+            pollId,
+            userId,
+            action,
+            metadata,
+            ipAddress,
+            userAgent,
+        });
+    } catch (error) {
+        console.error("Failed to write poll access log:", error.message);
+        return null;
+    }
+}
+
+function formatHourBucket(date) {
+    const bucketDate = new Date(date);
+    bucketDate.setUTCMinutes(0, 0, 0);
+    return bucketDate.toISOString();
+}
+
+function formatDayBucket(date) {
+    return new Date(date).toISOString().slice(0, 10);
+}
+
+function buildTimelineBuckets(responses) {
+    const hourly = new Map();
+    const daily = new Map();
+
+    for (const response of responses) {
+        const createdAt = response.createdAt || new Date();
+        const hourBucket = formatHourBucket(createdAt);
+        const dayBucket = formatDayBucket(createdAt);
+
+        hourly.set(hourBucket, (hourly.get(hourBucket) || 0) + 1);
+        daily.set(dayBucket, (daily.get(dayBucket) || 0) + 1);
+    }
+
+    return {
+        hourly: Array.from(hourly.entries()).map(([bucket, count]) => ({
+            bucket,
+            count,
+        })),
+        daily: Array.from(daily.entries()).map(([bucket, count]) => ({
+            bucket,
+            count,
+        })),
+    };
+}
 
 export async function createPoll(userId, pollData) {
     const {
@@ -213,6 +271,20 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
     poll.totalResponses += 1;
     await poll.save();
 
+    await logPollAccess({
+        pollId,
+        userId: poll.isAnonymous ? null : userId,
+        action: "respond",
+        metadata: {
+            responseId: response._id,
+            answerCount: answers.length,
+            completionPercentage,
+            answers: response.answers,
+        },
+        ipAddress,
+        userAgent,
+    });
+
     return response;
 }
 
@@ -229,13 +301,30 @@ export async function getPollAnalytics(pollId, userId) {
     }
 
     // Get all responses
-    const responses = await Response.find({ pollId });
+    const responses = await Response.find({ pollId }).sort({ createdAt: 1 });
 
     // Build analytics
     const questionAnalytics = poll.questions.map((question) => {
         const questionResponses = responses.filter((r) =>
             r.answers.some((a) => a.questionId.toString() === question._id.toString()),
         );
+
+        const optionCounts = new Map(
+            question.options.map((option) => [option.text, 0]),
+        );
+
+        for (const response of questionResponses) {
+            const answer = response.answers.find(
+                (a) => a.questionId.toString() === question._id.toString(),
+            );
+
+            if (answer && optionCounts.has(answer.selectedOption)) {
+                optionCounts.set(
+                    answer.selectedOption,
+                    optionCounts.get(answer.selectedOption) + 1,
+                );
+            }
+        }
 
         return {
             questionId: question._id,
@@ -244,9 +333,12 @@ export async function getPollAnalytics(pollId, userId) {
             totalResponses: questionResponses.length,
             options: question.options.map((opt) => ({
                 text: opt.text,
-                count: opt.count,
-                percentage: responses.length > 0
-                    ? Math.round((opt.count / responses.length) * 100)
+                count: optionCounts.get(opt.text) || 0,
+                percentage: questionResponses.length > 0
+                    ? Math.round(
+                        ((optionCounts.get(opt.text) || 0) /
+                            questionResponses.length) * 100,
+                    )
                     : 0,
             })),
         };
