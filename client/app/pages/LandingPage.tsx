@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Button } from "../components/ui/button";
 import { BarChart3, Zap, Globe, Shield } from "lucide-react";
 import { Card } from "../components/ui/card";
+import { useAuth } from "../context/AuthContext";
 
 export default function LandingPage() {
   const features = [
@@ -39,17 +40,7 @@ export default function LandingPage() {
           />
           <span className="font-semibold text-lg tracking-tight">POLLMAN</span>
         </div>
-        <div className="flex items-center gap-4">
-          <Link
-            to="/login"
-            className="text-sm font-medium hover:text-primary transition-colors"
-          >
-            Log in
-          </Link>
-          <Button asChild>
-            <Link to="/login">Get Started</Link>
-          </Button>
-        </div>
+        <HeaderRight />
       </header>
 
       <main className="flex-1">
@@ -92,6 +83,14 @@ export default function LandingPage() {
                   className="w-full sm:w-auto text-base glass"
                 >
                   View Examples
+                </Button>
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  className="w-full sm:w-auto text-base"
+                  asChild
+                >
+                  <Link to="/app">Open App</Link>
                 </Button>
               </div>
             </motion.div>
@@ -150,6 +149,40 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function HeaderRight() {
+  const { user } = useAuth();
+
+  return (
+    <div className="flex items-center gap-4">
+      {!user ? (
+        <>
+          <Link
+            to="/login"
+            className="text-sm font-medium hover:text-primary transition-colors"
+          >
+            Log in
+          </Link>
+          <Button asChild>
+            <Link to="/login">Get Started</Link>
+          </Button>
+        </>
+      ) : (
+        <Link
+          to="/app/settings"
+          className="flex items-center gap-3 text-sm font-medium hover:opacity-90 transition-opacity"
+        >
+          <img
+            src={user.avatar || "/content/logo.png"}
+            alt={user.name || "avatar"}
+            className="w-8 h-8 rounded-full object-cover border border-border"
+          />
+          <span className="hidden sm:inline">{user.name?.split(" ")?.[0]}</span>
+        </Link>
+      )}
     </div>
   );
 }

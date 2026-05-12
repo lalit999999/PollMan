@@ -142,20 +142,16 @@ export default function DashboardLayout() {
           </button>
 
           <div className="flex items-center gap-3 ml-auto">
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {theme === "dark" ? (
-                <Sun className="w-5 h-5" />
-              ) : (
-                <Moon className="w-5 h-5" />
-              )}
-            </Button>
             <div className="flex items-center gap-2 px-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent border border-border flex items-center justify-center text-xs font-medium text-primary-foreground">
-                {user?.name?.charAt(0)?.toUpperCase() || "?"}
-              </div>
+              <img
+                src={user?.avatar || "/content/logo.png"}
+                alt={user?.name}
+                className="w-8 h-8 rounded-full"
+              />
+
               <div className="hidden sm:block">
                 <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
+                <p className="text-xs text-muted-foreground">Creator</p>
               </div>
             </div>
           </div>

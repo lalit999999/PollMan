@@ -17,6 +17,7 @@ import {
   setAuthData,
   clearAuthData,
 } from "../services/authService";
+import { getProfile } from "../services/userService";
 
 interface User {
   _id: string;
@@ -53,8 +54,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedTokens = getStoredTokens();
 
       if (storedUser && storedTokens?.accessToken) {
+        // optimistic restore from localStorage
         setUser(storedUser);
         setAccessToken(storedTokens.accessToken);
+
+        // fetch fresh profile from API to ensure data is up-to-date
+        (async () => {
+          try {
+            const fresh = await getProfile();
+            if (fresh) setUser(fresh);
+          } catch (err) {
+            console.warn("Failed to fetch fresh profile:", err);
+          }
+        })();
       }
     } catch (err) {
       console.error("Failed to restore auth state:", err);

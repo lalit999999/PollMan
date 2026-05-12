@@ -45,9 +45,11 @@ export default function PollDetails() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="glass">
-            <Settings className="w-4 h-4 mr-2" />
-            Edit
+          <Button variant="outline" className="glass" asChild>
+            <Link to={`/app/polls/${id}/edit`}>
+              <Settings className="w-4 h-4 mr-2" />
+              Edit
+            </Link>
           </Button>
           <Button asChild>
             <Link to={`/app/analytics?poll=${id}`}>

@@ -11,6 +11,7 @@ import { AuthSuccess } from "./pages/auth/AuthSuccess";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import MyPolls from "./pages/dashboard/MyPolls";
 import CreatePoll from "./pages/dashboard/CreatePoll";
+import EditPoll from "./pages/dashboard/EditPoll";
 import PollDetails from "./pages/dashboard/PollDetails";
 import AnalyticsDashboard from "./pages/dashboard/AnalyticsDashboard";
 import SettingsPage from "./pages/dashboard/SettingsPage";
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
               { index: true, element: <DashboardHome /> },
               { path: "polls", element: <MyPolls /> },
               { path: "polls/new", element: <CreatePoll /> },
+              { path: "polls/:id/edit", element: <EditPoll /> },
               { path: "polls/:id", element: <PollDetails /> },
               { path: "analytics", element: <AnalyticsDashboard /> },
               { path: "settings", element: <SettingsPage /> },
