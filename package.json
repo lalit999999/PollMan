@@ -4,6 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "client:dev": "vite",
+    "server:dev": "nodemon server/src/server.js",
+    "server:start": "node server/src/server.js",
     "build": "vite build",
     "dev": "vite"
   },
