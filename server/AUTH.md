@@ -2,13 +2,13 @@
 
 ## Overview
 
-Pollman uses OAuth 2.0 for authentication with **Google** and **GitHub** (no email/password). JWT tokens are issued after successful OAuth callback and used to protect dashboard routes.
+Pollman uses OAuth 2.0 for authentication with **Google** (no email/password). JWT tokens are issued after successful OAuth callback and used to protect dashboard routes.
 
 ---
 
 ## Key Features
 
-✅ **Google & GitHub OAuth** - No password management  
+✅ **Google OAuth** - No password management  
 ✅ **JWT Tokens** - 1-day expiry with automatic logout  
 ✅ **Session Management** - Express-session for smooth user experience  
 ✅ **Protected Routes** - Auth middleware on all dashboard endpoints  
@@ -21,11 +21,11 @@ Pollman uses OAuth 2.0 for authentication with **Google** and **GitHub** (no ema
 ### Authentication Flow
 
 ```
-1. Frontend → GET /api/auth/google (or /github)
+1. Frontend → GET /api/auth/google
       ↓
-2. User grants permission on OAuth provider
+2. User grants permission on Google
       ↓
-3. OAuth provider → Callback URL with auth code
+3. Google → Callback URL with auth code
       ↓
 4. Server exchanges code for user profile
       ↓
@@ -55,24 +55,12 @@ Pollman uses OAuth 2.0 for authentication with **Google** and **GitHub** (no ema
    - `https://yourapi.com/api/auth/google/callback` (prod)
 6. Copy **Client ID** and **Client Secret** to `.env`
 
-#### GitHub OAuth
-
-1. Go to [GitHub Settings → Developer settings → OAuth Apps](https://github.com/settings/developers)
-2. Click **New OAuth App**
-3. Fill in details:
-   - Application name: Pollman
-   - Homepage URL: `http://localhost:5173` (or your domain)
-   - Authorization callback URL: `http://localhost:5000/api/auth/github/callback`
-4. Copy **Client ID** and **Client Secret** to `.env`
-
 ### 2. Configure .env
 
 ```bash
 # OAuth
 GOOGLE_CLIENT_ID=your_id
 GOOGLE_CLIENT_SECRET=your_secret
-GITHUB_CLIENT_ID=your_id
-GITHUB_CLIENT_SECRET=your_secret
 BACKEND_URL=http://localhost:5000
 CLIENT_URL=http://localhost:5173
 JWT_SECRET=openssl_rand_hex_32
@@ -106,26 +94,6 @@ OAuth callback - handled automatically by Passport.
 
 - `code` (auto) - OAuth authorization code
 - `state` (auto) - CSRF token
-
-**Response:** Redirects to frontend with tokens:
-
-```
-http://localhost:5173/auth/success?accessToken=...&refreshToken=...&user={...}
-```
-
----
-
-#### GET /api/auth/github
-
-Redirects user to GitHub login page.
-
-**Response:** Redirects to GitHub OAuth login
-
----
-
-#### GET /api/auth/github/callback
-
-OAuth callback - handled automatically by Passport.
 
 **Response:** Redirects to frontend with tokens:
 
@@ -177,7 +145,6 @@ Authorization: Bearer <accessToken>
     "name": "John Doe",
     "avatar": "https://...",
     "googleId": "...",
-    "githubId": "...",
     "createdAt": "2024-01-15T10:30:00Z",
     "updatedAt": "2024-01-15T10:30:00Z"
   }
@@ -194,10 +161,6 @@ Authorization: Bearer <accessToken>
 // Login Page
 const handleGoogleLogin = () => {
   window.location.href = `http://localhost:5000/api/auth/google`;
-};
-
-const handleGithubLogin = () => {
-  window.location.href = `http://localhost:5000/api/auth/github`;
 };
 ```
 

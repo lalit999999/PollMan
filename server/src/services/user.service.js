@@ -28,14 +28,9 @@ export async function getUserByGoogleId(googleId) {
     return User.findOne({ googleId }).select("-__v");
 }
 
-export async function getUserByGithubId(githubId) {
-    return User.findOne({ githubId }).select("-__v");
-}
-
 export async function unlinkProvider(userId, provider) {
     const updates = {};
     if (provider === "google") updates.googleId = null;
-    if (provider === "github") updates.githubId = null;
 
     return User.findByIdAndUpdate(userId, updates, { new: true }).select("-__v");
 }

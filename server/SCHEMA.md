@@ -8,7 +8,7 @@ This document outlines the MongoDB schema for the Pollman platform.
 
 ## User Schema
 
-Stores authenticated user information via OAuth (Google & GitHub).
+Stores authenticated user information via OAuth (Google).
 
 ```
 {
@@ -16,7 +16,6 @@ Stores authenticated user information via OAuth (Google & GitHub).
   email: String (unique, required),
   name: String,
   googleId: String (optional),
-  githubId: String (optional),
   avatar: String (optional),
   createdAt: Date,
   updatedAt: Date
@@ -27,7 +26,6 @@ Stores authenticated user information via OAuth (Google & GitHub).
 
 - `email` (unique)
 - `googleId`
-- `githubId`
 
 ---
 

@@ -61,13 +61,12 @@ export async function unlinkProvider(req, res) {
     try {
         const { provider } = req.body;
 
-        if (!provider || !["google", "github"].includes(provider)) {
+        if (!provider || provider !== "google") {
             return res.status(400).json({ success: false, message: "Invalid provider" });
         }
 
         const updated = await updateUserProfile(req.user._id, {
             ...(provider === "google" ? { googleId: null } : {}),
-            ...(provider === "github" ? { githubId: null } : {}),
         });
 
         return res.status(200).json({ success: true, message: `${provider} disconnected`, data: updated });

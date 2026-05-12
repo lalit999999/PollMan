@@ -3,8 +3,6 @@ import passport from "passport";
 import {
     googleAuth,
     googleAuthCallback,
-    githubAuth,
-    githubAuthCallback,
     logout,
     getMe,
 } from "../controllers/auth.controller.js";
@@ -22,18 +20,6 @@ router.get(
     "/google/callback",
     passport.authenticate("google", { failureRedirect: "/auth/login" }),
     googleAuthCallback,
-);
-
-// GitHub OAuth
-router.get(
-    "/github",
-    passport.authenticate("github", { scope: ["user:email"] }),
-);
-
-router.get(
-    "/github/callback",
-    passport.authenticate("github", { failureRedirect: "/auth/login" }),
-    githubAuthCallback,
 );
 
 // Logout

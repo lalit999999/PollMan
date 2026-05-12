@@ -1,6 +1,5 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { Strategy as GitHubStrategy } from "passport-github2";
 
 import env from "../config/env.js";
 import { User } from "../models/index.js";
@@ -37,54 +36,6 @@ passport.use(
                             email,
                             name: displayName || email.split("@")[0],
                             googleId: id,
-                            avatar,
-                        });
-                    }
-
-                    await user.save();
-                }
-
-                return done(null, user);
-            } catch (error) {
-                return done(error);
-            }
-        },
-    ),
-);
-
-// GitHub Strategy
-passport.use(
-    new GitHubStrategy(
-        {
-            clientID: env.GITHUB_CLIENT_ID,
-            clientSecret: env.GITHUB_CLIENT_SECRET,
-            callbackURL: `${env.BACKEND_URL}/api/auth/github/callback`,
-        },
-        async (accessToken, refreshToken, profile, done) => {
-            try {
-                const { id, username, photos } = profile;
-                let email = profile.emails?.[0]?.value;
-                const avatar = photos?.[0]?.value;
-
-                // GitHub doesn't always provide email in profile
-                if (!email) {
-                    email = `${username}@github.com`;
-                }
-
-                let user = await User.findOne({ githubId: id });
-
-                if (!user) {
-                    user = await User.findOne({ email });
-
-                    if (user) {
-                        user.githubId = id;
-                        user.name = username || user.name;
-                        user.avatar = avatar || user.avatar;
-                    } else {
-                        user = new User({
-                            email,
-                            name: username || "GitHub User",
-                            githubId: id,
                             avatar,
                         });
                     }

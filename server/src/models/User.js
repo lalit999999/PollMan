@@ -17,10 +17,6 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
-        githubId: {
-            type: String,
-            default: null,
-        },
         avatar: {
             type: String,
             default: null,
@@ -31,6 +27,5 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ email: 1 });
 userSchema.index({ googleId: 1 });
-userSchema.index({ githubId: 1 });
 
 export const User = mongoose.model("User", userSchema);
