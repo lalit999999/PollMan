@@ -6,9 +6,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { parseAuthSuccess, setAuthData } from "../services/authService";
+import { useNavigate, useSearchParams } from "react-router";
+import { useAuth } from "../../context/AuthContext";
+import { parseAuthSuccess, setAuthData } from "../../services/authService";
 
 export function AuthSuccess() {
   const navigate = useNavigate();

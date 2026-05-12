@@ -13,6 +13,7 @@ import {
   X
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { cn } from "../utils";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
@@ -27,10 +28,15 @@ const NAV_ITEMS = [
 export default function DashboardLayout() {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
-  const handleLogout = () => navigate("/");
+  
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
 
   const SidebarContent = () => (
     <>
@@ -127,11 +133,19 @@ export default function DashboardLayout() {
               onClick={() => setMobileOpen(true)}
               className="md:hidden p-2 text-muted-foreground hover:text-foreground"
             >
-              <Menu className="w-5 h-5" />
-            </button>
-            <h1 className="font-semibold hidden sm:block">Welcome back</h1>
-          </div>
-
+              <Menu className="w-5 h-5" /> md:gap-4">
+            <Button variant="ghost" size="icon" onClick={toggleTheme}>
+              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </Button>
+            <div className="flex items-center gap-2 px-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent border border-border flex items-center justify-center text-xs font-medium text-primary-foreground">
+                {user?.name?.charAt(0)?.toUpperCase() || "?"}
+              </div>
+              <div className="hidden sm:block">
+                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </div
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}

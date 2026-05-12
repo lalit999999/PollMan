@@ -46,7 +46,7 @@ export function parseAuthSuccess(queryParams: URLSearchParams): AuthResponse {
     }
   }
 
-  return { user, accessToken, refreshToken || null };
+  return { user, accessToken, refreshToken: refreshToken || null };
 }
 
 /**

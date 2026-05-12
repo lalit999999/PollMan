@@ -5,8 +5,7 @@
 
 import { getAccessToken } from "./authService";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = "http://localhost:5000/api";
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -21,16 +20,16 @@ async function request<T = any>(
 ): Promise<T> {
   const { skipAuth = false, ...fetchOptions } = options;
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(fetchOptions.headers || {}),
+    ...((fetchOptions.headers as Record<string, string>) || {}),
   };
 
   // Inject JWT token if not skipped
   if (!skipAuth) {
     const token = getAccessToken();
     if (token) {
-      headers.Authorization = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
   }
 

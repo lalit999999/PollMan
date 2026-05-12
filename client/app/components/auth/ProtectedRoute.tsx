@@ -3,7 +3,7 @@
  * Redirects unauthenticated users to login page
  */
 
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 
 export function ProtectedRoute() {

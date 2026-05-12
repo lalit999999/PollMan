@@ -38,7 +38,6 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           {
-            index: true,
             element: <DashboardLayout />,
             children: [
               { index: true, element: <DashboardHome /> },
