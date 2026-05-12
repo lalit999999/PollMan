@@ -13,41 +13,41 @@ import { errorHandler } from "./middleware/errorHandler.js";
 const app = express();
 
 app.use(
-  cors({
-    origin: env.CLIENT_URL,
-    credentials: true,
-  }),
+    cors({
+        origin: env.CLIENT_URL,
+        credentials: true,
+    }),
 );
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(
-  session({
-    secret: env.JWT_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      httpOnly: true,
-      secure: env.NODE_ENV === "production",
-    },
-  }),
+    session({
+        secret: env.JWT_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            httpOnly: true,
+            secure: env.NODE_ENV === "production",
+        },
+    }),
 );
 
 app.use(passport.initialize());
 app.use(passport.session());
 
 app.use(
-  morgan(env.NODE_ENV === "production" ? "combined" : "dev"),
+    morgan(env.NODE_ENV === "production" ? "combined" : "dev"),
 );
 
 app.use("/api", apiRoutes);
 
 app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Pollman backend is running 🚀",
-  });
+    res.status(200).json({
+        success: true,
+        message: "Pollman backend is running 🚀",
+    });
 });
 
 app.use(notFound);
