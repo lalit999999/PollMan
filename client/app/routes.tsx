@@ -2,10 +2,12 @@ import { createBrowserRouter } from "react-router";
 import RootLayout from "./layouts/RootLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 import AuthLayout from "./layouts/AuthLayout";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/auth/Login";
+import { AuthSuccess } from "./pages/auth/AuthSuccess";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import MyPolls from "./pages/dashboard/MyPolls";
 import CreatePoll from "./pages/dashboard/CreatePoll";
@@ -25,31 +27,39 @@ export const router = createBrowserRouter([
       {
         path: "login",
         element: <AuthLayout />,
-        children: [
-          { index: true, element: <Login /> }
-        ]
+        children: [{ index: true, element: <Login /> }],
+      },
+      {
+        path: "auth/success",
+        element: <AuthSuccess />,
       },
       {
         path: "app",
-        element: <DashboardLayout />,
+        element: <ProtectedRoute />,
         children: [
-          { index: true, element: <DashboardHome /> },
-          { path: "polls", element: <MyPolls /> },
-          { path: "polls/new", element: <CreatePoll /> },
-          { path: "polls/:id", element: <PollDetails /> },
-          { path: "analytics", element: <AnalyticsDashboard /> },
-          { path: "settings", element: <SettingsPage /> },
-        ]
+          {
+            index: true,
+            element: <DashboardLayout />,
+            children: [
+              { index: true, element: <DashboardHome /> },
+              { path: "polls", element: <MyPolls /> },
+              { path: "polls/new", element: <CreatePoll /> },
+              { path: "polls/:id", element: <PollDetails /> },
+              { path: "analytics", element: <AnalyticsDashboard /> },
+              { path: "settings", element: <SettingsPage /> },
+            ],
+          },
+        ],
       },
       {
         path: "p/:id",
-        element: <PublicPoll />
+        element: <PublicPoll />,
       },
       {
         path: "p/:id/results",
-        element: <PublicResults />
+        element: <PublicResults />,
       },
-      { path: "*", element: <NotFound /> }
+      { path: "*", element: <NotFound /> },
     ],
   },
 ]);

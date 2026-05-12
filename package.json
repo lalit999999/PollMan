@@ -8,7 +8,8 @@
     "server:dev": "nodemon server/src/server.js",
     "server:start": "node server/src/server.js",
     "build": "vite build",
-    "dev": "vite"
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "start": "concurrently \"npm run server:start\" \"npm run client:dev\""
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
