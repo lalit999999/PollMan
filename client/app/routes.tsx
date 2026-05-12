@@ -1,0 +1,55 @@
+import { createBrowserRouter } from "react-router";
+import RootLayout from "./layouts/RootLayout";
+import DashboardLayout from "./layouts/DashboardLayout";
+import AuthLayout from "./layouts/AuthLayout";
+
+// Pages
+import LandingPage from "./pages/LandingPage";
+import Login from "./pages/auth/Login";
+import DashboardHome from "./pages/dashboard/DashboardHome";
+import MyPolls from "./pages/dashboard/MyPolls";
+import CreatePoll from "./pages/dashboard/CreatePoll";
+import PollDetails from "./pages/dashboard/PollDetails";
+import AnalyticsDashboard from "./pages/dashboard/AnalyticsDashboard";
+import SettingsPage from "./pages/dashboard/SettingsPage";
+import PublicPoll from "./pages/public/PublicPoll";
+import PublicResults from "./pages/public/PublicResults";
+import NotFound from "./pages/error/NotFound";
+
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      { index: true, element: <LandingPage /> },
+      {
+        path: "login",
+        element: <AuthLayout />,
+        children: [
+          { index: true, element: <Login /> }
+        ]
+      },
+      {
+        path: "app",
+        element: <DashboardLayout />,
+        children: [
+          { index: true, element: <DashboardHome /> },
+          { path: "polls", element: <MyPolls /> },
+          { path: "polls/new", element: <CreatePoll /> },
+          { path: "polls/:id", element: <PollDetails /> },
+          { path: "analytics", element: <AnalyticsDashboard /> },
+          { path: "settings", element: <SettingsPage /> },
+        ]
+      },
+      {
+        path: "p/:id",
+        element: <PublicPoll />
+      },
+      {
+        path: "p/:id/results",
+        element: <PublicResults />
+      },
+      { path: "*", element: <NotFound /> }
+    ],
+  },
+]);
