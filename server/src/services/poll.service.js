@@ -1,4 +1,8 @@
 import { Poll, Question, Response, PollAccessLog } from "../models/index.js";
+import {
+    emitPollAnalyticsUpdate,
+    emitPollResponseNew,
+} from "../socket/index.js";
 
 export async function logPollAccess({
     pollId,
@@ -283,6 +287,28 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
         },
         ipAddress,
         userAgent,
+    });
+
+    emitPollResponseNew(pollId, {
+        pollId,
+        responseId: response._id,
+        userId: response.userId,
+        isAnonymous: response.isAnonymous,
+        completionPercentage: response.completionPercentage,
+        createdAt: response.createdAt,
+    });
+
+    const liveAnalytics = await getPollAnalytics(pollId, poll.createdBy);
+    emitPollAnalyticsUpdate(poll.createdBy.toString(), {
+        pollId,
+        totalResponses: liveAnalytics.totalResponses,
+        completionRate: liveAnalytics.completionRate,
+        completionPercentage: liveAnalytics.completionPercentage,
+        averageCompletion: liveAnalytics.averageCompletion,
+        questionAnalytics: liveAnalytics.questionAnalytics,
+        timeline: liveAnalytics.timeline,
+        recentResponses: liveAnalytics.recentResponses,
+        updatedAt: new Date(),
     });
 
     return response;
