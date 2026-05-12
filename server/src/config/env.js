@@ -4,9 +4,9 @@ dotenv.config();
 
 const env = {
     NODE_ENV: process.env.NODE_ENV || "development",
-    PORT: Number(process.env.PORT || 5000),
+    PORT: Number(process.env.PORT || 3300),
     CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
-    BACKEND_URL: process.env.BACKEND_URL || "http://localhost:5000",
+    BACKEND_URL: process.env.BACKEND_URL || "http://localhost:3300",
     MONGODB_URI: process.env.MONGODB_URI || "",
     JWT_SECRET: process.env.JWT_SECRET || "",
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
