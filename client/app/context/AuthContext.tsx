@@ -25,7 +25,6 @@ interface User {
   name: string;
   avatar?: string;
   googleId?: string;
-  githubId?: string;
 }
 
 interface AuthContextType {
@@ -78,6 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleSetUser = useCallback((newUser: User | null) => {
     setUser(newUser);
+    try {
+      // persist updated user immediately so UI reads from localStorage don't show stale data
+      const storedTokens = getStoredTokens();
+      if (storedTokens && storedTokens.accessToken) {
+        setAuthData(newUser, storedTokens as any);
+      }
+    } catch (err) {
+      console.warn("Failed to persist auth data:", err);
+    }
   }, []);
 
   // Only update in-memory token here. Persisting to localStorage is

@@ -16,7 +16,7 @@ export async function getProfile() {
 
 export default { getProfile };
 
-export async function unlinkProvider(provider: "google" | "github") {
+export async function unlinkProvider(provider: "google") {
   const res = await apiClient.post("/user/unlink", { provider });
   return res?.data || null;
 }

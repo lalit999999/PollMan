@@ -16,6 +16,9 @@ import PollDetails from "./pages/dashboard/PollDetails";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import PublicPoll from "./pages/public/PublicPoll";
 import PublicResults from "./pages/public/PublicResults";
+import Documentation from "./pages/Documentation";
+import AboutPage from "./pages/AboutPage";
+import LegalPage from "./pages/LegalPage";
 import NotFound from "./pages/error/NotFound";
 
 export const router = createBrowserRouter([
@@ -33,6 +36,10 @@ export const router = createBrowserRouter([
         path: "auth/success",
         element: <AuthSuccess />,
       },
+      { path: "documentation", element: <Documentation /> },
+      { path: "about", element: <AboutPage /> },
+      { path: "terms", element: <LegalPage /> },
+      { path: "privacy", element: <LegalPage /> },
       {
         path: "app",
         element: <ProtectedRoute />,

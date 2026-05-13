@@ -1,9 +1,12 @@
-import { Link } from "react-router";
+import { Link, NavLink } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "../components/ui/button";
-import { BarChart3, Zap, Globe, Shield } from "lucide-react";
+import { BarChart3, Zap, Globe, Shield, Moon, Sun } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+import { connectSocket, disconnectSocket } from "../lib/socketClient";
 
 export default function LandingPage() {
   const features = [
@@ -29,18 +32,87 @@ export default function LandingPage() {
     },
   ];
 
+  const { theme, setTheme } = useTheme();
+
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="h-20 flex items-center justify-between px-6 lg:px-12 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <img
-            src="/content/logo.png"
-            alt="POLLMAN"
-            className="w-8 h-8 rounded-lg object-cover"
-          />
-          <span className="font-semibold text-lg tracking-tight">POLLMAN</span>
+      <header className="h-24 flex flex-col justify-center border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-50">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 lg:px-12">
+          <div className="flex items-center gap-3">
+            <img
+              src="/content/logo.png"
+              alt="POLLMAN"
+              className="w-10 h-10 rounded-2xl object-cover"
+            />
+            <div>
+              <p className="text-sm uppercase tracking-[0.32em] text-muted-foreground">
+                POLLMAN
+              </p>
+              <h1 className="text-xl font-semibold">Polls that feel premium</h1>
+            </div>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-6">
+            {[
+              { label: "Documentation", path: "/documentation" },
+              { label: "About", path: "/about" },
+              { label: "Terms", path: "/terms" },
+              { label: "Privacy", path: "/privacy" },
+            ].map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `text-sm font-medium transition duration-150 ${
+                    isActive
+                      ? "text-primary underline underline-offset-4"
+                      : "text-muted-foreground hover:text-primary"
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <button
+              aria-label="Toggle theme"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background transition hover:border-primary"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5 text-primary" />
+              ) : (
+                <Moon className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+            {!user ? (
+              <>
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary"
+                >
+                  Log in
+                </Link>
+                <Button asChild>
+                  <Link to="/login">Get Started</Link>
+                </Button>
+              </>
+            ) : (
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/60 px-4 py-2">
+                <img
+                  src={user.avatar || "/content/logo.png"}
+                  alt={user.name || "avatar"}
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+                <span className="text-sm font-medium">
+                  Hi, {user.name?.split(" ")[0]}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-        <HeaderRight />
       </header>
 
       <main className="flex-1">
@@ -155,9 +227,80 @@ export default function LandingPage() {
 
 function HeaderRight() {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    let socket: any = null;
+    if (user) {
+      socket = connectSocket();
+
+      socket.on("poll:created", (payload: any) => {
+        setEvents((prev) =>
+          [
+            { type: "created", ...payload, receivedAt: new Date() },
+            ...prev,
+          ].slice(0, 5),
+        );
+      });
+
+      socket.on("poll:published", (payload: any) => {
+        setEvents((prev) =>
+          [
+            { type: "published", ...payload, receivedAt: new Date() },
+            ...prev,
+          ].slice(0, 5),
+        );
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("poll:created");
+        socket.off("poll:published");
+        disconnectSocket();
+      }
+    };
+  }, [user]);
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="relative flex flex-wrap items-center gap-4">
+      <nav className="hidden sm:flex items-center gap-3">
+        <Link
+          to="/documentation"
+          className="text-sm font-medium hover:text-primary transition-colors"
+        >
+          Documentation
+        </Link>
+        <Link
+          to="/about"
+          className="text-sm font-medium hover:text-primary transition-colors"
+        >
+          About
+        </Link>
+        <Link
+          to="/terms"
+          className="text-sm font-medium hover:text-primary transition-colors"
+        >
+          Terms
+        </Link>
+        <Link
+          to="/privacy"
+          className="text-sm font-medium hover:text-primary transition-colors"
+        >
+          Privacy
+        </Link>
+      </nav>
+
+      {/* Theme toggle */}
+      <button
+        aria-label="Toggle theme"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        className="px-3 py-2 rounded-md border border-border text-sm"
+      >
+        {theme === "dark" ? "Light" : "Dark"}
+      </button>
+
       {!user ? (
         <>
           <Link
@@ -171,17 +314,47 @@ function HeaderRight() {
           </Button>
         </>
       ) : (
-        <Link
-          to="/app/settings"
-          className="flex items-center gap-3 text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <img
-            src={user.avatar || "/content/logo.png"}
-            alt={user.name || "avatar"}
-            className="w-8 h-8 rounded-full object-cover border border-border"
-          />
-          <span className="hidden sm:inline">{user.name?.split(" ")?.[0]}</span>
-        </Link>
+        <>
+          <div className="flex items-center gap-3 text-sm font-medium">
+            <img
+              src={user.avatar || "/content/logo.png"}
+              alt={user.name || "avatar"}
+              className="w-8 h-8 rounded-full object-cover border border-border"
+            />
+            <span className="hidden sm:inline">
+              Welcome, {user.name?.split(" ")?.[0]}
+            </span>
+          </div>
+
+          <Link
+            to="/app/settings"
+            className="text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Manage
+          </Link>
+        </>
+      )}
+
+      {/* Live events toast area (visible only when logged in) */}
+      {user && events.length > 0 && (
+        <div className="absolute right-4 top-14 w-80 bg-card border border-border rounded-lg shadow-lg p-3 space-y-2">
+          {events.map((e, idx) => (
+            <div key={idx} className="text-sm">
+              {e.type === "created" ? (
+                <>
+                  <strong>New poll:</strong> {e.title}
+                </>
+              ) : (
+                <>
+                  <strong>Published:</strong> {e.title}
+                </>
+              )}
+              <div className="text-xs text-muted-foreground">
+                {new Date(e.receivedAt).toLocaleTimeString()}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

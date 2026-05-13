@@ -56,23 +56,7 @@ export default function DashboardHome() {
     void load();
   }, []);
 
-  const timeline = useMemo(() => {
-    const logs = overview?.recentActivity || [];
-    const counts = new Map<string, number>();
-
-    logs.forEach((log: any) => {
-      const day = new Date(log.createdAt).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      });
-      counts.set(day, (counts.get(day) || 0) + 1);
-    });
-
-    return Array.from(counts.entries()).map(([name, responses]) => ({
-      name,
-      responses,
-    }));
-  }, [overview]);
+  const timeline = useMemo(() => overview?.activityTimeline || [], [overview]);
 
   const stats = overview?.stats || {
     totalPolls: 0,
@@ -158,62 +142,70 @@ export default function DashboardHome() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={timeline}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient
-                      id="colorResponses"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="var(--primary)"
-                        stopOpacity={0.3}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="var(--primary)"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="name"
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      borderColor: "var(--border)",
-                      borderRadius: "8px",
-                    }}
-                    itemStyle={{ color: "var(--foreground)" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="responses"
-                    stroke="var(--primary)"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorResponses)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {timeline.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={timeline}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id="colorResponses"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="var(--primary)"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="var(--primary)"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="name"
+                      stroke="var(--muted-foreground)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="var(--muted-foreground)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--card)",
+                        borderColor: "var(--border)",
+                        borderRadius: "8px",
+                      }}
+                      itemStyle={{ color: "var(--foreground)" }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="responses"
+                      stroke="var(--primary)"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorResponses)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted-foreground">
+                  No activity yet. As users view and answer polls, the graph
+                  will populate here.
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

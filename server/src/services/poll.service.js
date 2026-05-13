@@ -2,6 +2,8 @@ import { Poll, Question, Response, PollAccessLog } from "../models/index.js";
 import {
     emitPollAnalyticsUpdate,
     emitPollResponseNew,
+    emitPollCreated,
+    emitPollPublished,
 } from "../socket/index.js";
 
 export async function logPollAccess({
@@ -102,6 +104,19 @@ export async function createPoll(userId, pollData) {
 
         poll.questions = createdQuestions.map((q) => q._id);
         await poll.save();
+    }
+
+    // Emit a global event that a new poll was created so landing pages / public viewers can react
+    try {
+        emitPollCreated({
+            pollId: poll._id,
+            title: poll.title,
+            createdBy: userId,
+            createdAt: poll.createdAt,
+            isPublished: poll.isPublished || false,
+        });
+    } catch (err) {
+        console.warn("Failed to emit poll created event:", err?.message || err);
     }
 
     return poll.populate("questions");
@@ -244,6 +259,18 @@ export async function publishPoll(pollId, userId) {
     poll.isPublished = true;
     poll.status = "active";
     await poll.save();
+
+    // Emit published event so frontpage and subscribers can react
+    try {
+        emitPollPublished({
+            pollId: poll._id,
+            title: poll.title,
+            createdBy: userId,
+            publishedAt: new Date(),
+        });
+    } catch (err) {
+        console.warn("Failed to emit poll published event:", err?.message || err);
+    }
 
     await logPollAccess({
         pollId,
@@ -503,6 +530,27 @@ export async function getDashboardOverview(userId) {
     const totalResponses = responseCounts.reduce((sum, row) => sum + row.total, 0);
     const activePolls = polls.filter((poll) => poll.isPublished && (!poll.expiresAt || new Date(poll.expiresAt) > new Date())).length;
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dailySeries = Array.from({ length: 7 }, (_, index) => {
+        const day = new Date(today);
+        day.setDate(today.getDate() - (6 - index));
+        const key = day.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+        });
+        return { key, count: 0 };
+    });
+
+    for (const log of recentLogs) {
+        const dayKey = new Date(log.createdAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+        });
+        const entry = dailySeries.find((row) => row.key === dayKey);
+        if (entry) entry.count += 1;
+    }
+
     return {
         stats: {
             totalPolls: polls.length,
@@ -510,6 +558,10 @@ export async function getDashboardOverview(userId) {
             activePolls,
             draftPolls: polls.filter((poll) => !poll.isPublished).length,
         },
+        activityTimeline: dailySeries.map((row) => ({
+            name: row.key,
+            responses: row.count,
+        })),
         recentPolls: polls.slice(0, 5).map((poll) => ({
             _id: poll._id,
             title: poll.title,

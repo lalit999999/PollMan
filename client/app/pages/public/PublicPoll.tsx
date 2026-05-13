@@ -32,6 +32,8 @@ export default function PublicPoll() {
   const [isCreator, setIsCreator] = useState(false);
   const [alreadyResponded, setAlreadyResponded] = useState(false);
   const [pollExpired, setPollExpired] = useState(false);
+  const [pollNotFound, setPollNotFound] = useState(false);
+  const [pollNotPublished, setPollNotPublished] = useState(false);
 
   const responseStorageKey = id
     ? `pollman:responded:${id}:${user?._id || "anon"}`
@@ -46,7 +48,8 @@ export default function PublicPoll() {
   useEffect(() => {
     const loadPoll = async () => {
       if (!id) {
-        toast.error("Poll not found.");
+        setPollNotFound(true);
+        setIsLoading(false);
         return;
       }
 
@@ -78,13 +81,18 @@ export default function PublicPoll() {
         }
       } catch (error: any) {
         console.error("Error loading poll:", error);
-        if (error.response?.data?.message?.includes("already responded")) {
+        const errorMessage =
+          error.response?.data?.message || error.message || "Unknown error";
+
+        if (errorMessage.includes("Poll not found")) {
+          setPollNotFound(true);
+        } else if (errorMessage.includes("Poll not accessible")) {
+          setPollNotPublished(true);
+        } else if (errorMessage.includes("already responded")) {
           setAlreadyResponded(true);
+        } else {
+          toast.error(errorMessage);
         }
-        toast.error(
-          error.response?.data?.message ||
-            "Failed to load poll. Please try again.",
-        );
       } finally {
         setIsLoading(false);
       }
@@ -185,6 +193,61 @@ export default function PublicPoll() {
           <div className="w-12 h-12 rounded-full bg-muted animate-pulse mx-auto" />
           <p className="text-muted-foreground">Loading poll...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (pollNotFound) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-destructive/20 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="w-10 h-10 text-destructive" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Poll Not Found</h1>
+          <p className="text-muted-foreground text-lg">
+            This poll doesn't exist or has been deleted.
+          </p>
+
+          <div className="pt-8 space-y-4">
+            <Button className="w-full" asChild>
+              <Link to="/">Return Home</Link>
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (pollNotPublished) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto">
+            <Clock className="w-10 h-10 text-blue-500" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Poll Not Published
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Please wait for the poll creator to publish the poll before you can
+            respond.
+          </p>
+
+          <div className="pt-8 space-y-4">
+            <Button className="w-full" asChild>
+              <Link to="/">Return Home</Link>
+            </Button>
+          </div>
+        </motion.div>
       </div>
     );
   }

@@ -72,7 +72,7 @@ function toDateTimeLocalValue(value?: string | null) {
   return local.toISOString().slice(0, 16);
 }
 
-function validateValues(values: PollFormValues) {
+function validateValues(values: PollFormValues, mode: PollFormMode = "create") {
   if (!values.title.trim()) {
     return "Poll title is required.";
   }
@@ -82,14 +82,17 @@ function validateValues(values: PollFormValues) {
   }
 
   if (!values.expiresAt) {
-    return "Expiry date is required for creating a poll.";
+    return "Expiry date is required.";
   }
 
   const expiresAt = new Date(values.expiresAt);
   if (Number.isNaN(expiresAt.getTime())) {
     return "Please choose a valid expiry date and time.";
   }
-  if (expiresAt.getTime() <= Date.now()) {
+
+  // For create mode, expiry must be in the future
+  // For edit mode, allow keeping the existing date (which may be in the past if poll is already expired)
+  if (mode === "create" && expiresAt.getTime() <= Date.now()) {
     return "Expiry time must be in the future.";
   }
 
@@ -340,7 +343,7 @@ export default function PollFormBuilder({
 
   const runAction = async (action: "save" | "publish") => {
     const values = getValues();
-    const validationMessage = validateValues(values);
+    const validationMessage = validateValues(values, mode);
 
     if (validationMessage) {
       setSubmitError(validationMessage);
@@ -608,7 +611,7 @@ export default function PollFormBuilder({
                   {...register("expiresAt", {
                     required: "Expiry date is required",
                   })}
-                  required
+                  required={mode === "create"}
                 />
                 <p className="text-xs text-muted-foreground">
                   All polls must have an expiry date after which responses will

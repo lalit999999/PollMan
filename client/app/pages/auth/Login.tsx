@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { Button } from "../../components/ui/button";
-import { Github } from "lucide-react";
+import {} from /*Github*/ "lucide-react";
 import { AUTH_BASE_URL } from "../../services/runtimeConfig";
 
 export default function Login() {
@@ -8,9 +8,7 @@ export default function Login() {
     window.location.href = `${AUTH_BASE_URL}/google`;
   };
 
-  const handleGithubLogin = () => {
-    window.location.href = `${AUTH_BASE_URL}/github`;
-  };
+  // GitHub login removed
 
   return (
     <div className="w-full max-w-[900px] flex rounded-2xl overflow-hidden border border-border shadow-2xl glass min-h-[500px]">
@@ -74,14 +72,7 @@ export default function Login() {
               Continue with Google
             </Button>
 
-            <Button
-              variant="outline"
-              className="w-full h-12 relative"
-              onClick={handleGithubLogin}
-            >
-              <Github className="w-5 h-5 absolute left-4" />
-              Continue with GitHub
-            </Button>
+            {/* GitHub login removed */}
           </div>
 
           <p className="text-center text-sm text-muted-foreground pt-4">

@@ -21,6 +21,7 @@ import { toast } from "sonner";
 export default function PublicResults() {
   const { id } = useParams();
   const [results, setResults] = useState<any>(null);
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,13 +43,13 @@ export default function PublicResults() {
   }, [id]);
 
   const chartData = useMemo(() => {
-    const question = results?.questions?.[0];
+    const question = results?.questions?.[selectedQuestionIndex || 0];
     if (!question) return [];
     return question.options.map((option: any) => ({
       name: option.text,
       votes: option.count,
     }));
-  }, [results]);
+  }, [results, selectedQuestionIndex]);
 
   const total =
     results?.totalResponses ||
@@ -98,6 +99,27 @@ export default function PublicResults() {
             <CardTitle>{results.description || "Results breakdown"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Question selector for chart */}
+            {results.questions?.length > 0 && (
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-muted-foreground">
+                  Select question:
+                </label>
+                <select
+                  value={selectedQuestionIndex}
+                  onChange={(e) =>
+                    setSelectedQuestionIndex(Number(e.target.value))
+                  }
+                  className="bg-background border border-border rounded px-3 py-2 text-sm"
+                >
+                  {results.questions.map((q: any, idx: number) => (
+                    <option key={q._id || idx} value={idx}>
+                      {`Q${idx + 1}: ${q.text}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
@@ -131,32 +153,55 @@ export default function PublicResults() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            {/* Show all questions with counts */}
+            {results.questions?.map((question: any, qIndex: number) => {
+              const qTotal = (question.options || []).reduce(
+                (acc: number, opt: any) => acc + (opt.count || 0),
+                0,
+              );
 
-            {results.questions?.map((question: any, qIndex: number) => (
-              <div key={question._id || qIndex} className="space-y-3">
-                <h3 className="font-semibold text-lg">
-                  Question {qIndex + 1}: {question.text}
-                </h3>
-                <div className="space-y-3">
-                  {question.options.map((result: any, i: number) => (
-                    <div key={i} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium">{result.text}</span>
-                        <span className="text-muted-foreground">
-                          {result.percentage}% ({result.count})
-                        </span>
+              return (
+                <div key={question._id || qIndex} className="space-y-3">
+                  <h3 className="font-semibold text-lg">
+                    Question {qIndex + 1}: {question.text}
+                  </h3>
+                  <div className="text-sm text-muted-foreground">
+                    {qTotal.toLocaleString()} total votes
+                  </div>
+                  <div className="space-y-3 mt-2">
+                    {question.options.map((result: any, i: number) => (
+                      <div key={i} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium">{result.text}</span>
+                          <span className="text-muted-foreground">
+                            {result.count?.toLocaleString() || 0} votes
+                            {typeof result.percentage === "number" && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                ({result.percentage}%)
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
+                            style={{
+                              width: `${
+                                qTotal > 0
+                                  ? Math.round(
+                                      ((result.count || 0) / qTotal) * 100,
+                                    )
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
-                          style={{ width: `${result.percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
 

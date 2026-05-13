@@ -9,7 +9,6 @@ interface User {
   name: string;
   avatar?: string;
   googleId?: string;
-  githubId?: string;
 }
 
 interface AuthTokens {

@@ -18,6 +18,18 @@ export function emitPollAnalyticsUpdate(userId, payload) {
     socketIO.to(`creator:${userId}`).emit("poll:analytics:update", payload);
 }
 
+export function emitPollCreated(payload) {
+    if (!socketIO) return;
+    // broadcast to all connected clients about a new poll
+    socketIO.emit("poll:created", payload);
+}
+
+export function emitPollPublished(payload) {
+    if (!socketIO) return;
+    // broadcast to all connected clients that a poll was published
+    socketIO.emit("poll:published", payload);
+}
+
 export function initializeSocket(io) {
     setSocketIO(io);
 

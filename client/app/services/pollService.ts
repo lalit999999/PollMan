@@ -176,6 +176,10 @@ export async function getDashboardOverview() {
         activePolls: number;
         draftPolls: number;
       };
+      activityTimeline: Array<{
+        name: string;
+        responses: number;
+      }>;
       recentPolls: ApiPoll[];
       recentActivity: Array<{
         _id: string;
