@@ -29,6 +29,7 @@ export type ApiPollQuestion = {
   _id?: string;
   text: string;
   isRequired: boolean;
+  voteCount?: number;
   options: ApiPollOption[];
 };
 
@@ -46,6 +47,16 @@ export type ApiPoll = {
   createdAt?: string;
   questions: ApiPollQuestion[];
   createdBy?: string;
+};
+
+export type PublicResultsQuestion = {
+  _id: string;
+  text: string;
+  options: Array<{
+    text: string;
+    count: number;
+    percentage: number;
+  }>;
 };
 
 type ApiResponse<T> = {
@@ -129,6 +140,54 @@ export async function publishPollResults(pollId: string) {
   const response = await apiClient.post<ApiResponse<ApiPoll>>(
     `/polls/${pollId}/publish`,
   );
+  return response.data;
+}
+
+export async function publishPoll(pollId: string) {
+  const response = await apiClient.post<ApiResponse<ApiPoll>>(
+    `/polls/${pollId}/go-live`,
+  );
+  return response.data;
+}
+
+export async function getPublicResults(pollId: string) {
+  const response = await apiClient.get<
+    ApiResponse<{
+      pollId: string;
+      title: string;
+      description: string;
+      totalResponses: number;
+      isExpired: boolean;
+      expiresAt: string | null;
+      questions: PublicResultsQuestion[];
+    }>
+  >(`/polls/${pollId}/results`, {
+    skipAuth: true,
+  });
+  return response.data;
+}
+
+export async function getDashboardOverview() {
+  const response = await apiClient.get<
+    ApiResponse<{
+      stats: {
+        totalPolls: number;
+        totalResponses: number;
+        activePolls: number;
+        draftPolls: number;
+      };
+      recentPolls: ApiPoll[];
+      recentActivity: Array<{
+        _id: string;
+        action: string;
+        metadata: any;
+        createdAt: string;
+        pollId: string;
+        userId: string | null;
+      }>;
+    }>
+  >("/polls/summary");
+
   return response.data;
 }
 

@@ -40,6 +40,7 @@ import {
   deletePoll,
   type ApiPoll,
 } from "../../services/pollService";
+import { useAuth } from "../../context/AuthContext";
 
 type PollAnalytics = {
   pollId: string;
@@ -153,10 +154,22 @@ export default function PollDetails() {
         : "Draft";
 
   const publicLink = `${window.location.origin}/p/${id}`;
+  const { user } = useAuth() as any;
+  const isCreator = !!(
+    user &&
+    poll &&
+    String(poll.createdBy) === String(user._id)
+  );
+  const publicLinkWithPreview = isCreator
+    ? `${publicLink}?preview=1`
+    : publicLink;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+    publicLinkWithPreview,
+  )}`;
 
   const copyPublicLink = async () => {
     try {
-      await navigator.clipboard.writeText(publicLink);
+      await navigator.clipboard.writeText(publicLinkWithPreview);
       toast.success("Public link copied to clipboard!");
     } catch {
       toast.error("Unable to copy link.");
@@ -213,12 +226,6 @@ export default function PollDetails() {
             <Link to={`/app/polls/${id}/edit`}>
               <Settings className="w-4 h-4 mr-2" />
               Edit
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link to={`/app/polls/${id}/analytics`}>
-              <BarChart2 className="w-4 h-4 mr-2" />
-              Full Analytics
             </Link>
           </Button>
           <AlertDialog>
@@ -405,21 +412,90 @@ export default function PollDetails() {
                 </div>
               </div>
               <Button className="w-full gap-2" variant="outline" asChild>
-                <Link to={`/p/${id}`}>
+                <Link
+                  to={
+                    publicLinkWithPreview.replace(window.location.origin, "") ||
+                    `/p/${id}`
+                  }
+                >
                   <ExternalLink className="w-4 h-4" />
                   Open Public Page
                 </Link>
               </Button>
             </CardContent>
             <CardFooter className="bg-muted/30 border-t border-border p-4 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-sm">
-                <QrCode className="w-4 h-4 text-muted-foreground" />
-                <span>QR Code</span>
+              <div className="flex items-center gap-4">
+                <img
+                  src={qrUrl}
+                  alt="QR code"
+                  className="w-24 h-24 rounded-md"
+                />
+                <div className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <QrCode className="w-4 h-4 text-muted-foreground" />
+                    <span>QR Code</span>
+                  </div>
+                  <a
+                    href={qrUrl}
+                    download={`poll-${id}-qr.png`}
+                    className="mt-2 inline-block text-sm text-primary underline"
+                  >
+                    Download PNG
+                  </a>
+                </div>
               </div>
-              <Button size="sm" variant="ghost">
-                Download
-              </Button>
             </CardFooter>
+          </Card>
+
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle>Analytics section</CardTitle>
+              <CardDescription>
+                Live analytics now live inside the sidebar instead of a separate
+                page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border bg-muted/30 p-3">
+                  <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                    Responses
+                  </p>
+                  <p className="mt-1 text-xl font-bold">
+                    {analytics.totalResponses}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/30 p-3">
+                  <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                    Completion
+                  </p>
+                  <p className="mt-1 text-xl font-bold">
+                    {analytics.completionPercentage}%
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-background/60 p-3 space-y-2">
+                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                  Question breakdown
+                </p>
+                {analytics.questionAnalytics
+                  ?.slice(0, 3)
+                  .map((question, index) => (
+                    <div
+                      key={question.questionId || index}
+                      className="flex items-center justify-between gap-3 text-sm"
+                    >
+                      <span className="text-muted-foreground truncate">
+                        Q{index + 1}
+                      </span>
+                      <span className="font-medium">
+                        {question.totalResponses} votes
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
           </Card>
 
           <Card className="glass border-dashed border-2 bg-transparent">
@@ -429,10 +505,11 @@ export default function PollDetails() {
               </div>
               <h3 className="font-semibold mb-1">Recent activity</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Latest submissions and response timing are shown in analytics.
+                Latest submissions and response timing are shown in the
+                analytics sidebar.
               </p>
               <Button variant="outline" className="w-full" asChild>
-                <Link to={`/app/polls/${id}/analytics`}>View Analytics</Link>
+                <Link to={`/app/polls/${id}`}>Refresh Poll Details</Link>
               </Button>
             </CardContent>
           </Card>

@@ -3,14 +3,17 @@ import {
     handleCreatePoll,
     handleGetPoll,
     handleUpdatePoll,
+    handlePublishPoll,
     handlePublishResults,
     handleSubmitResponse,
     handleGetAnalytics,
 } from "../controllers/poll.controller.js";
 import {
     handleGetUserPolls,
-    handleDeletePoll
+    handleDeletePoll,
+    handleGetDashboardOverview,
 } from "../controllers/polls.controller.js";
+import { handleGetPublicResults } from "../controllers/polls.controller.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { optionalAuthMiddleware } from "../middleware/auth.js";
 
@@ -18,6 +21,9 @@ const router = Router();
 
 // Get current user's polls (protected)
 router.get("/", authMiddleware, handleGetUserPolls);
+
+// Dashboard overview (protected)
+router.get("/summary", authMiddleware, handleGetDashboardOverview);
 
 // Create poll (protected - authenticated users only)
 router.post("/", authMiddleware, handleCreatePoll);
@@ -28,11 +34,17 @@ router.get("/:id", optionalAuthMiddleware, handleGetPoll);
 // Update poll (protected - only creator)
 router.patch("/:id", authMiddleware, handleUpdatePoll);
 
+// Publish poll draft (protected - only creator)
+router.post("/:id/go-live", authMiddleware, handlePublishPoll);
+
 // Delete poll (protected - only creator)
 router.delete("/:id", authMiddleware, handleDeletePoll);
 
 // Publish results (protected - only creator)
 router.post("/:id/publish", authMiddleware, handlePublishResults);
+
+// Public results page
+router.get("/:id/results", optionalAuthMiddleware, handleGetPublicResults);
 
 // Submit response (public/optional auth based on poll settings)
 router.post("/:id/respond", optionalAuthMiddleware, handleSubmitResponse);

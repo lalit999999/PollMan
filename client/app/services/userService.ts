@@ -20,3 +20,15 @@ export async function unlinkProvider(provider: "google" | "github") {
   const res = await apiClient.post("/user/unlink", { provider });
   return res?.data || null;
 }
+
+export async function updateProfile(payload: {
+  name?: string;
+  avatar?: string;
+}) {
+  const res = await apiClient.patch<{ success: boolean; data: any }>(
+    "/user/profile",
+    payload,
+  );
+
+  return res?.data || null;
+}

@@ -63,7 +63,8 @@ export default function EditPoll() {
 
       try {
         setLoading(true);
-        const poll = await getPollById(id);
+        const response = await getPollById(id);
+        const poll = (response as any).data || response;
         setInitialValues(pollToFormValues(poll));
         setPollStatus(poll);
       } catch (error) {

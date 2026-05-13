@@ -141,35 +141,67 @@ export async function updatePoll(pollId, userId, updateData) {
         throw new Error("Not authorized to edit this poll");
     }
 
-    // Can't edit if responses exist
-    const responseCount = await Response.countDocuments({ pollId });
-    if (responseCount > 0) {
-        throw new Error("Cannot edit poll with existing responses");
-    }
-
     // Update poll fields
-    if (updateData.title) poll.title = updateData.title;
-    if (updateData.description) poll.description = updateData.description;
-    if (updateData.questions) {
-        // Delete old questions
-        await Question.deleteMany({ pollId });
+    if (updateData.title !== undefined) poll.title = updateData.title;
+    if (updateData.description !== undefined) poll.description = updateData.description;
+    if (typeof updateData.isAnonymous === "boolean") {
+        poll.isAnonymous = updateData.isAnonymous;
+    }
+    if (typeof updateData.allowResultsPublish === "boolean") {
+        poll.allowResultsPublish = updateData.allowResultsPublish;
+    }
+    if (updateData.expiresAt !== undefined) {
+        poll.expiresAt = updateData.expiresAt;
+    }
+    if (Array.isArray(updateData.questions)) {
+        const existingQuestions = await Question.find({ pollId }).sort({ order: 1 });
+        const nextQuestionIds = [];
 
-        // Create new questions
-        const createdQuestions = await Question.insertMany(
-            updateData.questions.map((q, index) => ({
-                pollId: poll._id,
-                text: q.text,
-                type: "single-choice",
-                options: (q.options || []).map((opt) => ({
-                    text: opt.text || opt,
-                    count: 0,
-                })),
-                isRequired: q.isRequired || false,
-                order: index,
-            })),
-        );
+        for (const [index, q] of updateData.questions.entries()) {
+            const existingQuestion = existingQuestions[index] || null;
+            const normalizedOptions = (q.options || []).map((opt, optionIndex) => ({
+                _id: existingQuestion?.options?.[optionIndex]?._id,
+                text: opt.text || opt,
+                count: existingQuestion?.options?.[optionIndex]?.count || 0,
+            }));
 
-        poll.questions = createdQuestions.map((q) => q._id);
+            if (existingQuestion) {
+                existingQuestion.text = q.text;
+                existingQuestion.type = "single-choice";
+                existingQuestion.options = normalizedOptions;
+                existingQuestion.isRequired = q.isRequired || false;
+                existingQuestion.order = index;
+                if (typeof existingQuestion.voteCount !== "number") {
+                    existingQuestion.voteCount = 0;
+                }
+                await existingQuestion.save();
+                nextQuestionIds.push(existingQuestion._id);
+            } else {
+                const createdQuestion = await Question.create({
+                    pollId: poll._id,
+                    text: q.text,
+                    type: "single-choice",
+                    options: normalizedOptions.map((opt) => ({
+                        text: opt.text,
+                        count: opt.count,
+                    })),
+                    isRequired: q.isRequired || false,
+                    voteCount: 0,
+                    order: index,
+                });
+                nextQuestionIds.push(createdQuestion._id);
+            }
+        }
+
+        // Remove extra questions if the poll was shortened
+        if (existingQuestions.length > updateData.questions.length) {
+            const idsToDelete = existingQuestions
+                .slice(updateData.questions.length)
+                .map((question) => question._id);
+            await Question.deleteMany({ _id: { $in: idsToDelete } });
+        }
+
+        poll.questions = nextQuestionIds;
     }
 
     await poll.save();
@@ -196,6 +228,31 @@ export async function publishPollResults(pollId, userId) {
     await poll.save();
 
     return poll;
+}
+
+export async function publishPoll(pollId, userId) {
+    const poll = await Poll.findById(pollId);
+
+    if (!poll) {
+        throw new Error("Poll not found");
+    }
+
+    if (poll.createdBy.toString() !== userId.toString()) {
+        throw new Error("Not authorized to publish this poll");
+    }
+
+    poll.isPublished = true;
+    poll.status = "active";
+    await poll.save();
+
+    await logPollAccess({
+        pollId,
+        userId,
+        action: "publish",
+        metadata: { area: "poll-live" },
+    });
+
+    return poll.populate("questions");
 }
 
 export async function submitPollResponse(pollId, responseData, userId = null) {
@@ -277,15 +334,14 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
 
     // Update question option counts
     for (const answer of answers) {
-        await Question.findByIdAndUpdate(
-            answer.questionId,
-            {
-                $inc: { "options.$[opt].count": 1 },
+        await Question.findByIdAndUpdate(answer.questionId, {
+            $inc: {
+                voteCount: 1,
+                "options.$[opt].count": 1,
             },
-            {
-                arrayFilters: [{ "opt.text": answer.selectedOption }],
-            },
-        );
+        }, {
+            arrayFilters: [{ "opt.text": answer.selectedOption }],
+        });
     }
 
     // Update poll total responses
@@ -373,6 +429,7 @@ export async function getPollAnalytics(pollId, userId) {
             questionId: question._id,
             text: question.text,
             isRequired: question.isRequired,
+            voteCount: question.voteCount || questionResponses.length,
             totalResponses: questionResponses.length,
             options: question.options.map((opt) => ({
                 text: opt.text,
@@ -421,5 +478,56 @@ export async function getPollAnalytics(pollId, userId) {
                 completionPercentage: r.completionPercentage,
                 isAnonymous: r.isAnonymous,
             })),
+    };
+}
+
+export async function getDashboardOverview(userId) {
+    const [polls, recentLogs] = await Promise.all([
+        Poll.find({ createdBy: userId }).sort({ createdAt: -1 }).select("title description createdAt isPublished resultsPublished expiresAt totalResponses status"),
+        PollAccessLog.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(12)
+            .lean(),
+    ]);
+
+    const pollIds = polls.map((poll) => poll._id);
+    const responseCounts = await Response.aggregate([
+        { $match: { pollId: { $in: pollIds } } },
+        { $group: { _id: "$pollId", total: { $sum: 1 } } },
+    ]);
+
+    const responseCountMap = new Map(
+        responseCounts.map((row) => [row._id.toString(), row.total]),
+    );
+
+    const totalResponses = responseCounts.reduce((sum, row) => sum + row.total, 0);
+    const activePolls = polls.filter((poll) => poll.isPublished && (!poll.expiresAt || new Date(poll.expiresAt) > new Date())).length;
+
+    return {
+        stats: {
+            totalPolls: polls.length,
+            totalResponses,
+            activePolls,
+            draftPolls: polls.filter((poll) => !poll.isPublished).length,
+        },
+        recentPolls: polls.slice(0, 5).map((poll) => ({
+            _id: poll._id,
+            title: poll.title,
+            description: poll.description,
+            createdAt: poll.createdAt,
+            isPublished: poll.isPublished,
+            resultsPublished: poll.resultsPublished,
+            expiresAt: poll.expiresAt,
+            status: poll.status,
+            totalResponses: responseCountMap.get(poll._id.toString()) || poll.totalResponses || 0,
+        })),
+        recentActivity: recentLogs.map((log) => ({
+            _id: log._id,
+            action: log.action,
+            metadata: log.metadata || {},
+            createdAt: log.createdAt,
+            pollId: log.pollId,
+            userId: log.userId,
+        })),
     };
 }

@@ -4,7 +4,14 @@ import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Card } from "../../components/ui/card";
-import { Search, Filter, Plus, MoreVertical, Copy } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Plus,
+  MoreVertical,
+  Copy,
+  BarChart2,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { getMyPolls, ApiPoll } from "../../services/pollService";
 import { toast } from "sonner";

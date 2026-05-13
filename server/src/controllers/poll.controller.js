@@ -2,11 +2,13 @@ import {
     createPoll,
     getPollById,
     updatePoll,
+    publishPoll,
     publishPollResults,
     submitPollResponse,
     getPollAnalytics,
     logPollAccess,
 } from "../services/poll.service.js";
+import { Poll } from "../models/index.js";
 
 export async function handleCreatePoll(req, res) {
     try {
@@ -78,8 +80,29 @@ export async function handleGetPoll(req, res) {
             data: poll,
         });
     } catch (error) {
-        const statusCode =
-            error.message === "Poll not found" ? 404 : 403;
+        // If poll is not accessible (unpublished) allow a preview when
+        // the requester includes ?preview=1 and is the creator (authenticated).
+        if (error.message === "Poll not accessible" && req.query?.preview && req.user) {
+            try {
+                const previewPoll = await Poll.findById(req.params.id).populate("questions");
+                if (previewPoll && previewPoll.createdBy.toString() === req.user._id.toString()) {
+                    await logPollAccess({
+                        pollId: req.params.id,
+                        userId: req.user._id,
+                        action: "preview",
+                        metadata: { area: "poll-preview" },
+                        ipAddress: req.ip || req.connection.remoteAddress || null,
+                        userAgent: req.get("user-agent") || null,
+                    });
+
+                    return res.status(200).json({ success: true, data: previewPoll });
+                }
+            } catch (innerErr) {
+                console.error("Preview fetch failed:", innerErr.message);
+            }
+        }
+
+        const statusCode = error.message === "Poll not found" ? 404 : 403;
         return res.status(statusCode).json({
             success: false,
             message: error.message,
@@ -90,12 +113,22 @@ export async function handleGetPoll(req, res) {
 export async function handleUpdatePoll(req, res) {
     try {
         const { id } = req.params;
-        const { title, description, questions } = req.body;
+        const {
+            title,
+            description,
+            questions,
+            isAnonymous,
+            expiresAt,
+            allowResultsPublish,
+        } = req.body;
 
         const poll = await updatePoll(id, req.user._id, {
             title,
             description,
             questions,
+            isAnonymous,
+            expiresAt,
+            allowResultsPublish,
         });
 
         return res.status(200).json({
@@ -121,6 +154,26 @@ export async function handlePublishResults(req, res) {
         return res.status(200).json({
             success: true,
             message: "Poll results published successfully",
+            data: poll,
+        });
+    } catch (error) {
+        const statusCode = error.message === "Poll not found" ? 404 : 400;
+        return res.status(statusCode).json({
+            success: false,
+            message: error.message,
+        });
+    }
+}
+
+export async function handlePublishPoll(req, res) {
+    try {
+        const { id } = req.params;
+
+        const poll = await publishPoll(id, req.user._id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Poll published successfully",
             data: poll,
         });
     } catch (error) {

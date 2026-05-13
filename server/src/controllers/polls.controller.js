@@ -1,5 +1,6 @@
 import { Poll, Response, Question } from "../models/index.js";
 import { getUserPolls } from "../services/polls.service.js";
+import { getDashboardOverview } from "../services/poll.service.js";
 
 export async function handleGetUserPolls(req, res) {
     try {
@@ -24,6 +25,23 @@ export async function handleGetUserPolls(req, res) {
         return res.status(500).json({
             success: false,
             message: "Failed to fetch polls",
+            error: error.message,
+        });
+    }
+}
+
+export async function handleGetDashboardOverview(req, res) {
+    try {
+        const overview = await getDashboardOverview(req.user._id);
+
+        return res.status(200).json({
+            success: true,
+            data: overview,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to load dashboard overview",
             error: error.message,
         });
     }

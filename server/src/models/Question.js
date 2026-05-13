@@ -38,6 +38,10 @@ const questionSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        voteCount: {
+            type: Number,
+            default: 0,
+        },
         order: {
             type: Number,
             default: 0,

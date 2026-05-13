@@ -33,6 +33,16 @@ export default function PublicPoll() {
   const [alreadyResponded, setAlreadyResponded] = useState(false);
   const [pollExpired, setPollExpired] = useState(false);
 
+  const responseStorageKey = id
+    ? `pollman:responded:${id}:${user?._id || "anon"}`
+    : null;
+
+  const creatorLabel =
+    (poll as any)?.createdByName ||
+    (poll as any)?.creatorName ||
+    (poll as any)?.createdBy?.name ||
+    "Poll creator";
+
   useEffect(() => {
     const loadPoll = async () => {
       if (!id) {
@@ -43,8 +53,15 @@ export default function PublicPoll() {
       setIsLoading(true);
       try {
         const response = await getPollById(id);
-        const pollData = response.data || response;
+        const pollData = ((response as any).data ?? response) as ApiPoll;
         setPoll(pollData);
+
+        if (
+          responseStorageKey &&
+          localStorage.getItem(responseStorageKey) === "true"
+        ) {
+          setAlreadyResponded(true);
+        }
 
         // Check if current user is creator
         if (user && pollData.createdBy === user._id) {
@@ -74,7 +91,7 @@ export default function PublicPoll() {
     };
 
     void loadPoll();
-  }, [id, user?._id]);
+  }, [id, user?._id, responseStorageKey]);
 
   const handleNext = async () => {
     if (!selected) {
@@ -110,20 +127,22 @@ export default function PublicPoll() {
     setIsSubmitting(true);
     try {
       await submitPollResponse(id, finalAnswers);
+      if (responseStorageKey) {
+        localStorage.setItem(responseStorageKey, "true");
+      }
       setSubmitted(true);
       toast.success("Response submitted successfully!");
     } catch (error: any) {
       console.error("Error submitting response:", error);
-      const errorMsg = error.response?.data?.message || error.message || "Failed to submit response. Please try again.";
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to submit response. Please try again.";
       toast.error(errorMsg);
-      
+
       if (errorMsg.includes("already responded")) {
         setAlreadyResponded(true);
       }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
     } finally {
       setIsSubmitting(false);
     }
@@ -141,9 +160,12 @@ export default function PublicPoll() {
           <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">
             <AlertCircle className="w-10 h-10 text-amber-500" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Cannot Answer Own Poll</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Cannot Answer Own Poll
+          </h1>
           <p className="text-muted-foreground text-lg">
-            As the poll creator, you cannot answer your own poll. Share this link with others to collect responses.
+            As the poll creator, you cannot answer your own poll. Share this
+            link with others to collect responses.
           </p>
 
           <div className="pt-8 space-y-4">
@@ -206,7 +228,8 @@ export default function PublicPoll() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Poll Expired</h1>
           <p className="text-muted-foreground text-lg">
-            This poll is no longer accepting responses. The expiry date has passed.
+            This poll is no longer accepting responses. The expiry date has
+            passed.
           </p>
 
           <div className="pt-8 space-y-4">
@@ -230,9 +253,12 @@ export default function PublicPoll() {
           <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-10 h-10 text-blue-500" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Already Responded</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Already Responded
+          </h1>
           <p className="text-muted-foreground text-lg">
-            You have already submitted a response to this poll. Only one response per user is allowed.
+            You have already submitted a response to this poll. Only one
+            response per user is allowed.
           </p>
 
           <div className="pt-8 space-y-4">
@@ -263,9 +289,12 @@ export default function PublicPoll() {
                 <CheckCircle2 className="w-10 h-10 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Thank you!</h1>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  Thank you!
+                </h1>
                 <p className="text-muted-foreground text-lg mt-2">
-                  Your response has been recorded {poll.isAnonymous ? "anonymously" : ""}.
+                  Your response has been recorded{" "}
+                  {poll.isAnonymous ? "anonymously" : ""}.
                 </p>
               </div>
 
@@ -292,14 +321,18 @@ export default function PublicPoll() {
                 </h3>
                 <div className="text-sm space-y-2">
                   <p className="text-muted-foreground">Poll created by</p>
-                  <p className="font-semibold text-foreground">{poll.createdBy || "Anonymous"}</p>
+                  <p className="font-semibold text-foreground">
+                    {creatorLabel}
+                  </p>
                 </div>
               </div>
 
               {/* Poll Info */}
               <div className="space-y-4">
                 <h3 className="font-semibold">{poll.title}</h3>
-                <p className="text-sm text-muted-foreground">{poll.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {poll.description}
+                </p>
               </div>
 
               {/* Submission Summary */}
@@ -313,14 +346,26 @@ export default function PublicPoll() {
                     const question = poll.questions.find(
                       (q) => q._id === answer.questionId,
                     );
+                    const optionIndex = question?.options?.findIndex(
+                      (option) => option.text === answer.selectedOption,
+                    );
+                    const optionLabel =
+                      optionIndex !== undefined && optionIndex >= 0
+                        ? String.fromCharCode(65 + optionIndex)
+                        : "?";
                     return (
-                      <div key={idx} className="text-sm space-y-1 pb-3 border-b border-border/50">
+                      <div
+                        key={idx}
+                        className="text-sm space-y-1 pb-3 border-b border-border/50"
+                      >
                         <p className="text-xs text-muted-foreground font-medium">
                           Q{idx + 1}
                         </p>
-                        <p className="font-medium text-foreground">{question?.text}</p>
+                        <p className="font-medium text-foreground">
+                          {question?.text}
+                        </p>
                         <p className="text-primary">
-                          → ({answer.selectedOption})
+                          → ({optionLabel}) {answer.selectedOption}
                         </p>
                       </div>
                     );
@@ -331,10 +376,22 @@ export default function PublicPoll() {
               {/* Summary Stats */}
               <div className="space-y-3 rounded-xl bg-primary/5 border border-primary/20 p-4">
                 <p className="text-sm text-muted-foreground">
-                  Responses recorded: <span className="font-semibold text-primary">{answers.length}</span>
+                  Responses recorded:{" "}
+                  <span className="font-semibold text-primary">
+                    {answers.length}
+                  </span>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Questions answered: <span className="font-semibold text-primary">{answers.length}/{poll.questions.length}</span>
+                  Questions answered:{" "}
+                  <span className="font-semibold text-primary">
+                    {answers.length}/{poll.questions.length}
+                  </span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Remaining questions:{" "}
+                  <span className="font-semibold text-primary">
+                    {Math.max(poll.questions.length - answers.length, 0)}
+                  </span>
                 </p>
               </div>
             </div>
@@ -348,32 +405,6 @@ export default function PublicPoll() {
       </div>
     );
   }
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full text-center space-y-6"
-        >
-          <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10 text-primary" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Thank you!</h1>
-          <p className="text-muted-foreground text-lg">
-            Your response has been recorded{" "}
-            {poll.isAnonymous ? "anonymously" : ""}.
-          </p>
-
-          <div className="pt-8 space-y-4">
-            <Button className="w-full" asChild>
-              <Link to={`/p/${id}/results`}>View Live Results</Link>
-            </Button>
-            <div className="text-sm text-muted-foreground pt-8 flex items-center justify-center gap-2">
-              Powered by{" "}
-              <span className="font-semibold text-foreground">POLLMAN</span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   const currentQuestion = poll.questions[step];
   const pollProgress = ((step + 1) / poll.questions.length) * 100;
 

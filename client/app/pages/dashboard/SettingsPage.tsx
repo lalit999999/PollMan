@@ -10,12 +10,50 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { useTheme } from "next-themes";
 import { useAuth } from "../../context/AuthContext";
-import { unlinkProvider, getProfile } from "../../services/userService";
-import { useState } from "react";
+import {
+  unlinkProvider,
+  updateProfile,
+  getProfile,
+} from "../../services/userService";
+import { useState, useEffect } from "react";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth() as any;
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const parts = (user.name || "").split(" ");
+      setFirstName(parts[0] || "");
+      setLastName(parts.slice(1).join(" ") || "");
+      setAvatarUrl(user.avatar || "");
+    }
+  }, [user]);
+
+  async function handleSave() {
+    setLoading(true);
+    try {
+      const name = [firstName, lastName].filter(Boolean).join(" ");
+      const payload: any = { name };
+      if (avatarUrl) payload.avatar = avatarUrl;
+
+      const res = await updateProfile(payload);
+      if (res) {
+        // refresh profile
+        const fresh = await getProfile();
+        if (fresh) setUser(fresh);
+      }
+    } catch (err) {
+      console.error("Failed to save profile", err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
@@ -56,16 +94,16 @@ export default function SettingsPage() {
                 <Label htmlFor="firstName">First Name</Label>
                 <Input
                   id="firstName"
-                  defaultValue={user?.name?.split(" ")?.[0] || ""}
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
                 <Input
                   id="lastName"
-                  defaultValue={
-                    user?.name?.split(" ")?.slice(1).join(" ") || ""
-                  }
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                 />
               </div>
             </div>
@@ -78,8 +116,20 @@ export default function SettingsPage() {
                 disabled
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="avatar">Avatar URL</Label>
+              <Input
+                id="avatar"
+                type="text"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="https://...jpg"
+              />
+            </div>
             <div className="pt-2">
-              <Button>Save Changes</Button>
+              <Button onClick={handleSave} disabled={loading}>
+                {loading ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -163,6 +213,12 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+async function handleSave(this: any) {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { user, setUser } = useAuth() as any;
+  // since this function is defined outside the component scope we call getProfile after update
 }
 
 function ConnectedAccount({
