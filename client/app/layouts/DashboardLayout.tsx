@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   ListChecks,
   PlusCircle,
-  BarChart3,
   Settings,
   LogOut,
   Sun,
@@ -22,7 +21,6 @@ const NAV_ITEMS = [
   { path: "/app", icon: LayoutDashboard, label: "Dashboard", end: true },
   { path: "/app/polls", icon: ListChecks, label: "My Polls" },
   { path: "/app/polls/new", icon: PlusCircle, label: "Create Poll" },
-  { path: "/app/analytics", icon: BarChart3, label: "Analytics" },
 ];
 
 export default function DashboardLayout() {
@@ -37,8 +35,6 @@ export default function DashboardLayout() {
     logout();
     navigate("/login", { replace: true });
   };
-
-
 
   const SidebarContent = () => (
     <>
@@ -142,8 +138,6 @@ export default function DashboardLayout() {
           >
             <Menu className="w-5 h-5" />
           </button>
-
-
 
           <div className="flex items-center gap-3 ml-auto">
             <div className="flex items-center gap-2 px-2">

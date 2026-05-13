@@ -2,8 +2,16 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../../components/ui/button";
-import { CheckCircle2, ArrowRight, AlertCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  ArrowRight,
+  AlertCircle,
+  User,
+  Clock,
+  BarChart3,
+} from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext";
 import {
   getPollById,
   submitPollResponse,
@@ -13,6 +21,7 @@ import {
 
 export default function PublicPoll() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [poll, setPoll] = useState<ApiPoll | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [step, setStep] = useState(0);
@@ -20,6 +29,9 @@ export default function PublicPoll() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [answers, setAnswers] = useState<PollAnswer[]>([]);
+  const [isCreator, setIsCreator] = useState(false);
+  const [alreadyResponded, setAlreadyResponded] = useState(false);
+  const [pollExpired, setPollExpired] = useState(false);
 
   useEffect(() => {
     const loadPoll = async () => {
@@ -31,9 +43,27 @@ export default function PublicPoll() {
       setIsLoading(true);
       try {
         const response = await getPollById(id);
-        setPoll(response);
+        const pollData = response.data || response;
+        setPoll(pollData);
+
+        // Check if current user is creator
+        if (user && pollData.createdBy === user._id) {
+          setIsCreator(true);
+          return;
+        }
+
+        // Check if poll is expired
+        if (pollData.expiresAt) {
+          const expiryDate = new Date(pollData.expiresAt);
+          if (new Date() > expiryDate) {
+            setPollExpired(true);
+          }
+        }
       } catch (error: any) {
         console.error("Error loading poll:", error);
+        if (error.response?.data?.message?.includes("already responded")) {
+          setAlreadyResponded(true);
+        }
         toast.error(
           error.response?.data?.message ||
             "Failed to load poll. Please try again.",
@@ -44,7 +74,7 @@ export default function PublicPoll() {
     };
 
     void loadPoll();
-  }, [id]);
+  }, [id, user?._id]);
 
   const handleNext = async () => {
     if (!selected) {
@@ -84,14 +114,47 @@ export default function PublicPoll() {
       toast.success("Response submitted successfully!");
     } catch (error: any) {
       console.error("Error submitting response:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to submit response. Please try again.",
-      );
+      const errorMsg = error.response?.data?.message || error.message || "Failed to submit response. Please try again.";
+      toast.error(errorMsg);
+      
+      if (errorMsg.includes("already responded")) {
+        setAlreadyResponded(true);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Show creator error
+  if (isCreator) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="w-10 h-10 text-amber-500" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Cannot Answer Own Poll</h1>
+          <p className="text-muted-foreground text-lg">
+            As the poll creator, you cannot answer your own poll. Share this link with others to collect responses.
+          </p>
+
+          <div className="pt-8 space-y-4">
+            <Button className="w-full" asChild>
+              <Link to="/app/polls">Back to Dashboard</Link>
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -130,11 +193,161 @@ export default function PublicPoll() {
     );
   }
 
-  if (submitted) {
+  if (pollExpired) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">
+            <Clock className="w-10 h-10 text-amber-500" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Poll Expired</h1>
+          <p className="text-muted-foreground text-lg">
+            This poll is no longer accepting responses. The expiry date has passed.
+          </p>
+
+          <div className="pt-8 space-y-4">
+            <Button className="w-full" asChild>
+              <Link to="/">Return Home</Link>
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (alreadyResponded) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10 text-blue-500" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Already Responded</h1>
+          <p className="text-muted-foreground text-lg">
+            You have already submitted a response to this poll. Only one response per user is allowed.
+          </p>
+
+          <div className="pt-8 space-y-4">
+            <Button className="w-full" asChild>
+              <Link to={`/p/${id}/results`}>View Live Results</Link>
+            </Button>
+            <Button className="w-full" variant="outline" asChild>
+              <Link to="/">Return Home</Link>
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="flex flex-col lg:flex-row min-h-screen">
+          {/* Main content */}
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="max-w-md w-full text-center space-y-6"
+            >
+              <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-10 h-10 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Thank you!</h1>
+                <p className="text-muted-foreground text-lg mt-2">
+                  Your response has been recorded {poll.isAnonymous ? "anonymously" : ""}.
+                </p>
+              </div>
+
+              <div className="pt-8 space-y-4">
+                <Button className="w-full" asChild>
+                  <Link to={`/p/${id}/results`}>View Live Results</Link>
+                </Button>
+                <div className="text-sm text-muted-foreground pt-8 flex items-center justify-center gap-2">
+                  Powered by{" "}
+                  <span className="font-semibold text-foreground">POLLMAN</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Sidebar with submission summary */}
+          <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-border bg-muted/30 p-6 sm:p-8 flex flex-col justify-between">
+            <div className="space-y-8">
+              {/* Creator Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <User className="w-4 h-4 text-primary" />
+                  Creator
+                </h3>
+                <div className="text-sm space-y-2">
+                  <p className="text-muted-foreground">Poll created by</p>
+                  <p className="font-semibold text-foreground">{poll.createdBy || "Anonymous"}</p>
+                </div>
+              </div>
+
+              {/* Poll Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">{poll.title}</h3>
+                <p className="text-sm text-muted-foreground">{poll.description}</p>
+              </div>
+
+              {/* Submission Summary */}
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Your Responses
+                </h3>
+                <div className="space-y-3">
+                  {answers.map((answer, idx) => {
+                    const question = poll.questions.find(
+                      (q) => q._id === answer.questionId,
+                    );
+                    return (
+                      <div key={idx} className="text-sm space-y-1 pb-3 border-b border-border/50">
+                        <p className="text-xs text-muted-foreground font-medium">
+                          Q{idx + 1}
+                        </p>
+                        <p className="font-medium text-foreground">{question?.text}</p>
+                        <p className="text-primary">
+                          → ({answer.selectedOption})
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Summary Stats */}
+              <div className="space-y-3 rounded-xl bg-primary/5 border border-primary/20 p-4">
+                <p className="text-sm text-muted-foreground">
+                  Responses recorded: <span className="font-semibold text-primary">{answers.length}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Questions answered: <span className="font-semibold text-primary">{answers.length}/{poll.questions.length}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="text-xs text-muted-foreground text-center">
+              Response submitted successfully
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-md w-full text-center space-y-6"
         >

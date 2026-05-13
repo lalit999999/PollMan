@@ -72,14 +72,16 @@ function validateValues(values: PollFormValues) {
     return "Add at least one question.";
   }
 
-  if (values.expiresAt) {
-    const expiresAt = new Date(values.expiresAt);
-    if (Number.isNaN(expiresAt.getTime())) {
-      return "Please choose a valid expiry date and time.";
-    }
-    if (expiresAt.getTime() <= Date.now()) {
-      return "Expiry time must be in the future.";
-    }
+  if (!values.expiresAt) {
+    return "Expiry date is required for creating a poll.";
+  }
+
+  const expiresAt = new Date(values.expiresAt);
+  if (Number.isNaN(expiresAt.getTime())) {
+    return "Please choose a valid expiry date and time.";
+  }
+  if (expiresAt.getTime() <= Date.now()) {
+    return "Expiry time must be in the future.";
   }
 
   for (let index = 0; index < values.questions.length; index += 1) {
@@ -556,16 +558,20 @@ export default function PollFormBuilder({
                   className="flex items-center gap-2 text-sm"
                 >
                   <CalendarDays className="h-4 w-4 text-primary" />
-                  Expiry date
+                  Expiry date <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="expiresAt"
                   type="datetime-local"
                   className="bg-background"
-                  {...register("expiresAt")}
+                  {...register("expiresAt", {
+                    required: "Expiry date is required",
+                  })}
+                  required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Leave empty if this poll should stay open indefinitely.
+                  All polls must have an expiry date after which responses will
+                  not be accepted.
                 </p>
               </div>
             </CardContent>
