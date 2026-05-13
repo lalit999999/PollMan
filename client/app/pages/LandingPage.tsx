@@ -1,12 +1,26 @@
 import { Link, NavLink } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "../components/ui/button";
-import { BarChart3, Zap, Globe, Shield, Moon, Sun } from "lucide-react";
+import {
+  BarChart3,
+  Zap,
+  Globe,
+  Shield,
+  Moon,
+  Sun,
+  CheckCircle,
+  Users,
+  TrendingUp,
+  Github,
+  Linkedin,
+  Mail,
+} from "lucide-react";
 import { Card } from "../components/ui/card";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { connectSocket, disconnectSocket } from "../lib/socketClient";
+import Footer from "../components/ui/Footer";
 
 export default function LandingPage() {
   const features = [
@@ -33,6 +47,7 @@ export default function LandingPage() {
   ];
 
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -48,7 +63,7 @@ export default function LandingPage() {
               <p className="text-sm uppercase tracking-[0.32em] text-muted-foreground">
                 POLLMAN
               </p>
-              <h1 className="text-xl font-semibold">Polls that feel premium</h1>
+              <h1 className="text-xl font-semibold"></h1>
             </div>
           </div>
 
@@ -204,23 +219,154 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* How it Works Section */}
+        <section className="py-24 px-6 lg:px-12">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4">How POLLMAN Works</h2>
+              <p className="text-muted-foreground text-lg">
+                Create, share, and analyze polls in just a few simple steps.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[
+                {
+                  step: "01",
+                  title: "Create Your Poll",
+                  desc: "Design questions, set options, and configure settings in our intuitive builder.",
+                  icon: CheckCircle,
+                },
+                {
+                  step: "02",
+                  title: "Share the Link",
+                  desc: "Get a unique shareable link or QR code to distribute your poll anywhere.",
+                  icon: Users,
+                },
+                {
+                  step: "03",
+                  title: "Collect Responses",
+                  desc: "Watch responses come in real-time with live analytics and notifications.",
+                  icon: TrendingUp,
+                },
+                {
+                  step: "04",
+                  title: "Analyze Results",
+                  desc: "View detailed analytics, charts, and insights to make data-driven decisions.",
+                  icon: BarChart3,
+                },
+              ].map((step, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                  className="text-center"
+                >
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 text-primary text-2xl font-bold">
+                    {step.step}
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                  <p className="text-muted-foreground">{step.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Demo Section */}
+        <section className="py-24 px-6 lg:px-12 bg-muted/30">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4">See POLLMAN in Action</h2>
+              <p className="text-muted-foreground text-lg">
+                Watch how easy it is to create and manage polls.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-12">
+              <Card className="p-6 glass">
+                <h3 className="text-xl font-semibold mb-4">
+                  Dashboard Preview
+                </h3>
+                <img
+                  src="/content/screenshot-dashboard.png"
+                  alt="Dashboard Screenshot"
+                  className="w-full rounded-lg border"
+                />
+              </Card>
+              <Card className="p-6 glass">
+                <h3 className="text-xl font-semibold mb-4">Analytics View</h3>
+                <img
+                  src="/content/screenshot-analytics.png"
+                  alt="Analytics Screenshot"
+                  className="w-full rounded-lg border"
+                />
+              </Card>
+            </div>
+
+            <div className="text-center">
+              <Card className="p-6 glass max-w-2xl mx-auto">
+                <h3 className="text-xl font-semibold mb-4">Demo Video</h3>
+                <video
+                  src="/content/demo-video.mp4"
+                  controls
+                  className="w-full rounded-lg"
+                  poster="/content/video-poster.png"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Developer Contact Section */}
+        <section className="py-24 px-6 lg:px-12">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-8">Meet the Developer</h2>
+            <Card className="p-8 glass max-w-md mx-auto">
+              <img
+                src="/content/developer-avatar.png"
+                alt="Developer"
+                className="w-24 h-24 rounded-full mx-auto mb-6 object-cover"
+              />
+              <h3 className="text-xl font-semibold mb-2">Lalit Kumar</h3>
+              <p className="text-muted-foreground mb-4">
+                Full-Stack Developer & UI/UX Enthusiast
+              </p>
+              <div className="flex justify-center gap-4">
+                <a
+                  href="https://github.com/lalit79"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Github className="h-5 w-5" />
+                </a>
+                <a
+                  href="https://linkedin.com/in/lalit79"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Linkedin className="h-5 w-5" />
+                </a>
+                <a
+                  href="mailto:lalit@example.com"
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Mail className="h-5 w-5" />
+                </a>
+              </div>
+            </Card>
+          </div>
+        </section>
       </main>
 
-      <footer className="border-t border-border py-12 px-6 lg:px-12 bg-card">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <img
-              src="/content/logo.png"
-              alt="POLLMAN"
-              className="w-6 h-6 rounded object-cover"
-            />
-            <span className="font-semibold">POLLMAN</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            © 2026 POLLMAN. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -21,7 +21,7 @@ export default function LegalPage() {
         {tabs.map((tab) => (
           <Link key={tab.path} to={tab.path}>
             <Button
-              variant={tab.path === activePath ? "solid" : "outline"}
+              variant={tab.path === activePath ? "default" : "outline"}
               size="sm"
             >
               {tab.label}
