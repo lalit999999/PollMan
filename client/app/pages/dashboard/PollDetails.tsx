@@ -137,6 +137,32 @@ export default function PollDetails() {
     void loadDetails();
   }, [id]);
 
+  // Socket.IO real-time updates
+  useEffect(() => {
+    if (!user?.id || !id) return;
+
+    const socket = connectSocket();
+
+    // Join creator room for analytics updates
+    socket.emit("join:creator", user.id);
+
+    // Listen for real-time analytics updates
+    const handleAnalyticsUpdate = (data: any) => {
+      if (data.pollId === id) {
+        console.log("Real-time analytics update received:", data);
+        setAnalytics(data);
+        toast.success("Analytics updated in real-time!");
+      }
+    };
+
+    socket.on("poll:analytics:update", handleAnalyticsUpdate);
+
+    return () => {
+      socket.off("poll:analytics:update", handleAnalyticsUpdate);
+      disconnectSocket();
+    };
+  }, [user?.id, id]);
+
   const handleDelete = async () => {
     if (!id) return;
 

@@ -18,6 +18,7 @@ import {
   type ApiPoll,
   type PollAnswer,
 } from "../../services/pollService";
+import { connectSocket, disconnectSocket } from "../../lib/socketClient";
 
 export default function PublicPoll() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +35,7 @@ export default function PublicPoll() {
   const [pollExpired, setPollExpired] = useState(false);
   const [pollNotFound, setPollNotFound] = useState(false);
   const [pollNotPublished, setPollNotPublished] = useState(false);
+  const [liveResponseCount, setLiveResponseCount] = useState(0);
 
   const responseStorageKey = id
     ? `pollman:responded:${id}:${user?._id || "anon"}`
