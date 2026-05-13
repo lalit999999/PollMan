@@ -1,55 +1,148 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import { Users, MousePointerClick, TrendingUp, Clock } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Button } from "../../components/ui/button";
 import { Link } from "react-router";
+import {
+  Users,
+  TrendingUp,
+  Clock,
+  BarChart2,
+  Activity,
+  Plus,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { getDashboardOverview } from "../../services/pollService";
+import { toast } from "sonner";
 
-const data = [
-  { name: "Mon", responses: 400 },
-  { name: "Tue", responses: 300 },
-  { name: "Wed", responses: 550 },
-  { name: "Thu", responses: 450 },
-  { name: "Fri", responses: 700 },
-  { name: "Sat", responses: 200 },
-  { name: "Sun", responses: 800 },
-];
-
-const RECENT_POLLS = [
-  { id: "1", title: "Product Features Survey 2026", responses: 1245, status: "Active", date: "2 hours ago" },
-  { id: "2", title: "Employee Satisfaction Q2", responses: 84, status: "Active", date: "1 day ago" },
-  { id: "3", title: "Website Redesign Feedback", responses: 320, status: "Closed", date: "3 days ago" },
-];
+function formatTime(value?: string) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
+}
 
 export default function DashboardHome() {
+  const [overview, setOverview] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await getDashboardOverview();
+        setOverview(data);
+      } catch (error: any) {
+        console.error("Failed to load dashboard overview", error);
+        toast.error(
+          error.response?.data?.message || "Failed to load dashboard overview.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void load();
+  }, []);
+
+  const timeline = useMemo(() => {
+    const logs = overview?.recentActivity || [];
+    const counts = new Map<string, number>();
+
+    logs.forEach((log: any) => {
+      const day = new Date(log.createdAt).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
+      counts.set(day, (counts.get(day) || 0) + 1);
+    });
+
+    return Array.from(counts.entries()).map(([name, responses]) => ({
+      name,
+      responses,
+    }));
+  }, [overview]);
+
+  const stats = overview?.stats || {
+    totalPolls: 0,
+    totalResponses: 0,
+    activePolls: 0,
+    draftPolls: 0,
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Dashboard Overview</h2>
-          <p className="text-muted-foreground">Here's what's happening with your polls today.</p>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Dashboard Overview
+          </h2>
+          <p className="text-muted-foreground">
+            Here&apos;s what&apos;s happening with your polls today.
+          </p>
         </div>
+        <Button asChild>
+          <Link to="/app/polls/new">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Poll
+          </Link>
+        </Button>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "Total Responses", value: "12,450", icon: Users, change: "+14%" },
-          { title: "Active Polls", value: "8", icon: TrendingUp, change: "+2" },
-          { title: "Completion Rate", value: "68%", icon: MousePointerClick, change: "+5.4%" },
-          { title: "Avg. Time", value: "1m 24s", icon: Clock, change: "-12s" },
+          {
+            title: "Total Polls",
+            value: stats.totalPolls,
+            icon: BarChart2,
+            change: "All drafts + live",
+          },
+          {
+            title: "Total Responses",
+            value: stats.totalResponses,
+            icon: Users,
+            change: "Across all polls",
+          },
+          {
+            title: "Active Polls",
+            value: stats.activePolls,
+            icon: TrendingUp,
+            change: "Currently live",
+          },
+          {
+            title: "Draft Polls",
+            value: stats.draftPolls,
+            icon: Clock,
+            change: "Saved but not live",
+          },
         ].map((stat, i) => (
           <Card key={i} className="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between space-y-0 pb-2">
-                <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </p>
                 <stat.icon className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="flex items-baseline gap-2">
-                <div className="text-3xl font-bold">{stat.value}</div>
-                <span className={`text-xs font-medium ${stat.change.startsWith('+') ? 'text-primary' : 'text-red-500'}`}>
-                  {stat.change}
-                </span>
+                <div className="text-3xl font-bold">
+                  {loading ? "—" : stat.value.toLocaleString()}
+                </div>
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {stat.change}
+              </p>
             </CardContent>
           </Card>
         ))}
@@ -58,26 +151,67 @@ export default function DashboardHome() {
       <div className="grid gap-4 md:grid-cols-7">
         <Card className="md:col-span-4 glass">
           <CardHeader>
-            <CardTitle>Response Volume</CardTitle>
-            <CardDescription>Daily responses across all active polls over the last 7 days.</CardDescription>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>
+              Live access and response activity from your polls.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart
+                  data={timeline}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
                   <defs>
-                    <linearGradient id="colorResponses" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
+                    <linearGradient
+                      id="colorResponses"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--primary)"
+                        stopOpacity={0.3}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--primary)"
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                    itemStyle={{ color: 'var(--foreground)' }}
+                  <XAxis
+                    dataKey="name"
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
                   />
-                  <Area type="monotone" dataKey="responses" stroke="var(--primary)" strokeWidth={2} fillOpacity={1} fill="url(#colorResponses)" />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      borderColor: "var(--border)",
+                      borderRadius: "8px",
+                    }}
+                    itemStyle={{ color: "var(--foreground)" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="responses"
+                    stroke="var(--primary)"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorResponses)"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -87,28 +221,118 @@ export default function DashboardHome() {
         <Card className="md:col-span-3 glass flex flex-col">
           <CardHeader>
             <CardTitle>Recent Polls</CardTitle>
-            <CardDescription>Your most recently created or updated polls.</CardDescription>
+            <CardDescription>
+              Your most recently created or updated polls.
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col gap-4">
-            {RECENT_POLLS.map((poll) => (
-              <Link 
-                key={poll.id} 
-                to={`/app/polls/${poll.id}`}
-                className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="space-y-1 truncate pr-4">
-                  <p className="font-medium leading-none truncate">{poll.title}</p>
-                  <div className="flex items-center text-xs text-muted-foreground gap-2">
-                    <span>{poll.responses} responses</span>
-                    <span>•</span>
-                    <span>{poll.date}</span>
+            {loading ? (
+              <div className="text-sm text-muted-foreground">
+                Loading recent polls...
+              </div>
+            ) : overview?.recentPolls?.length ? (
+              overview.recentPolls.map((poll: any) => {
+                const isExpired =
+                  poll.expiresAt && new Date(poll.expiresAt) < new Date();
+                const status = poll.resultsPublished
+                  ? "Results Published"
+                  : isExpired
+                    ? "Closed"
+                    : poll.isPublished
+                      ? "Active"
+                      : "Draft";
+
+                return (
+                  <Link
+                    key={poll._id}
+                    to={`/app/polls/${poll._id}`}
+                    className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted transition-colors"
+                  >
+                    <div className="space-y-1 truncate pr-4">
+                      <p className="font-medium leading-none truncate">
+                        {poll.title}
+                      </p>
+                      <div className="flex items-center text-xs text-muted-foreground gap-2">
+                        <span>{poll.totalResponses || 0} responses</span>
+                        <span>•</span>
+                        <span>{formatTime(poll.createdAt)}</span>
+                      </div>
+                    </div>
+                    <Badge
+                      variant={status === "Active" ? "success" : "secondary"}
+                    >
+                      {status}
+                    </Badge>
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                No polls created yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle>Recent Activity Feed</CardTitle>
+            <CardDescription>
+              Latest views, responses, and publish actions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <div className="text-sm text-muted-foreground">
+                Loading activity...
+              </div>
+            ) : overview?.recentActivity?.length ? (
+              overview.recentActivity.slice(0, 8).map((item: any) => (
+                <div
+                  key={item._id}
+                  className="flex items-start gap-3 rounded-xl border border-border bg-muted/20 p-3"
+                >
+                  <div className="mt-1 rounded-full bg-primary/10 p-2 text-primary">
+                    <Activity className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium capitalize">
+                      {item.action}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {formatTime(item.createdAt)}
+                    </p>
                   </div>
                 </div>
-                <Badge variant={poll.status === "Active" ? "success" : "secondary"}>
-                  {poll.status}
-                </Badge>
+              ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                No recent activity yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Jump straight into the next task.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/app/polls">
+                <BarChart2 className="w-4 h-4 mr-2" />
+                View Polls
               </Link>
-            ))}
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/app/settings">
+                <Users className="w-4 h-4 mr-2" />
+                Settings
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

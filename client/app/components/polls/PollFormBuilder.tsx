@@ -10,6 +10,15 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -276,6 +285,7 @@ export default function PollFormBuilder({
     null,
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
 
   const defaults = useMemo<PollFormValues>(
     () => ({
@@ -406,18 +416,49 @@ export default function PollFormBuilder({
             </Button>
 
             {onPublish ? (
-              <Button
-                type="button"
-                className="gap-2"
-                disabled={isSubmitting !== null}
-                onClick={() => void runAction("publish")}
-              >
-                <Flame className="h-4 w-4" />
-                {isSubmitting === "publish"
-                  ? "Publishing..."
-                  : publishLabel ||
-                    (mode === "create" ? "Save & Publish" : "Publish Results")}
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  className="gap-2"
+                  disabled={isSubmitting !== null}
+                  onClick={() => setShowPublishConfirm(true)}
+                >
+                  <Flame className="h-4 w-4" />
+                  {isSubmitting === "publish"
+                    ? "Publishing..."
+                    : publishLabel ||
+                      (mode === "create"
+                        ? "Save & Publish"
+                        : "Publish Results")}
+                </Button>
+
+                <AlertDialog
+                  open={showPublishConfirm}
+                  onOpenChange={(open) => setShowPublishConfirm(open)}
+                >
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Publish this poll?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will make the poll available to respondents on the
+                        public link.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="flex gap-3 justify-end">
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={async () => {
+                          setShowPublishConfirm(false);
+                          await runAction("publish");
+                        }}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        Confirm
+                      </AlertDialogAction>
+                    </div>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             ) : null}
           </div>
         </div>

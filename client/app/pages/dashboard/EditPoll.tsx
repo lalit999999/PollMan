@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import PollFormBuilder from "../../components/polls/PollFormBuilder";
 import {
   getPollById,
-  publishPollResults,
+  publishPoll,
   updatePoll,
   type PollFormValues,
   type ApiPoll,
@@ -91,9 +91,9 @@ export default function EditPoll() {
   const handlePublish = async (values: PollFormValues) => {
     if (!id) return;
     const updated = await updatePoll(id, values);
-    const published = await publishPollResults(id);
+    const published = await publishPoll(id);
     setPollStatus((published as ApiPoll) || updated);
-    toast.success("Poll results published successfully.");
+    toast.success("Poll published successfully.");
     navigate(`/app/polls/${id}`);
   };
 
@@ -123,11 +123,11 @@ export default function EditPoll() {
     <PollFormBuilder
       mode="edit"
       initialValues={initialValues}
-      initialPublished={pollStatus?.resultsPublished}
+      initialPublished={pollStatus?.isPublished}
       title="Edit Poll"
       subtitle="Refine your questions, update settings, and publish results when ready."
       saveLabel="Save Changes"
-      publishLabel="Publish Results"
+      publishLabel="Publish Poll"
       onSave={handleSave}
       onPublish={handlePublish}
       onCancel={() => navigate(`/app/polls/${id}`)}

@@ -38,6 +38,8 @@ import {
   getPollAnalytics,
   getPollById,
   deletePoll,
+  publishPoll,
+  publishPollResults,
   type ApiPoll,
 } from "../../services/pollService";
 import { useAuth } from "../../context/AuthContext";
@@ -85,6 +87,10 @@ export default function PollDetails() {
   const [analytics, setAnalytics] = useState<PollAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [publishMode, setPublishMode] = useState<"publish" | "results" | null>(
+    null,
+  );
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     const loadDetails = async () => {
@@ -95,26 +101,32 @@ export default function PollDetails() {
 
       setIsLoading(true);
       try {
-        const [pollResponse, analyticsResponse] = await Promise.all([
+        const [pollResponse, analyticsResponse] = await Promise.allSettled([
           getPollById(id),
           getPollAnalytics(id),
         ]);
 
-        console.log("Poll Response:", pollResponse);
-        console.log("Analytics Response:", analyticsResponse);
+        if (pollResponse.status === "fulfilled") {
+          const pollData =
+            (pollResponse.value as any).data || pollResponse.value;
+          setPoll(pollData as ApiPoll);
+        } else {
+          throw pollResponse.reason;
+        }
 
-        // Extract data if wrapped in response object
-        const pollData = (pollResponse as any).data || pollResponse;
-        const analyticsData =
-          (analyticsResponse as any).data || analyticsResponse;
-
-        setPoll(pollData as ApiPoll);
-        setAnalytics(analyticsData as PollAnalytics);
+        if (analyticsResponse.status === "fulfilled") {
+          const analyticsData =
+            (analyticsResponse.value as any).data || analyticsResponse.value;
+          setAnalytics(analyticsData as PollAnalytics);
+        } else {
+          setAnalytics(null);
+        }
       } catch (error: any) {
         console.error("Error loading poll details:", error);
-        console.error("Error response:", error.response);
         toast.error(
-          error.response?.data?.message || "Failed to load poll details.",
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to load poll details.",
         );
       } finally {
         setIsLoading(false);
@@ -176,6 +188,29 @@ export default function PollDetails() {
     }
   };
 
+  const handlePublish = async () => {
+    if (!id || !publishMode) return;
+
+    setIsPublishing(true);
+    try {
+      if (publishMode === "publish") {
+        const updated = await publishPoll(id);
+        setPoll(updated as ApiPoll);
+        toast.success("Poll published successfully.");
+      } else {
+        const updated = await publishPollResults(id);
+        setPoll((updated as ApiPoll) || poll);
+        toast.success("Poll results published successfully.");
+      }
+    } catch (error: any) {
+      console.error("Publish action failed:", error);
+      toast.error(error.response?.data?.message || "Failed to publish.");
+    } finally {
+      setIsPublishing(false);
+      setPublishMode(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto space-y-6 animate-pulse pb-20">
@@ -194,13 +229,37 @@ export default function PollDetails() {
     );
   }
 
-  if (!poll || !analytics) {
+  if (!poll) {
     return (
       <div className="max-w-5xl mx-auto py-20 text-center text-muted-foreground">
         Poll details could not be loaded.
       </div>
     );
   }
+
+  const analyticsData: PollAnalytics = analytics ?? {
+    pollId: poll._id,
+    title: poll.title,
+    totalResponses: poll.totalResponses || 0,
+    completionRate: 0,
+    completionPercentage: 0,
+    averageCompletion: 0,
+    expiresAt: poll.expiresAt || null,
+    resultsPublished: poll.resultsPublished,
+    questionAnalytics: (poll.questions || []).map((question) => ({
+      questionId: question._id || "",
+      text: question.text,
+      isRequired: question.isRequired,
+      totalResponses: 0,
+      options: (question.options || []).map((option) => ({
+        text: option.text,
+        count: option.count || 0,
+        percentage: 0,
+      })),
+    })),
+    timeline: { hourly: [], daily: [] },
+    recentResponses: [],
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
@@ -228,6 +287,17 @@ export default function PollDetails() {
               Edit
             </Link>
           </Button>
+          {!poll.isPublished ? (
+            <Button onClick={() => setPublishMode("publish")}>Publish</Button>
+          ) : !poll.resultsPublished ? (
+            <Button onClick={() => setPublishMode("results")}>
+              Publish Results
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link to={`/p/${id}/results`}>Results</Link>
+            </Button>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="icon" className="h-10 w-10">
@@ -257,6 +327,40 @@ export default function PollDetails() {
         </div>
       </div>
 
+      <AlertDialog
+        open={!!publishMode}
+        onOpenChange={(open) => {
+          if (!open) setPublishMode(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {publishMode === "publish"
+                ? "Publish this poll?"
+                : "Publish poll results?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {publishMode === "publish"
+                ? "This will make the poll available to respondents on the public link."
+                : "This will make the final results visible on the public results page."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel disabled={isPublishing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isPublishing ? "Working..." : "Confirm"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           <Card className="glass">
@@ -267,6 +371,12 @@ export default function PollDetails() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {!analytics && (
+                <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+                  Analytics are temporarily unavailable, so this section is
+                  showing poll defaults.
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-muted/30 border border-border">
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
@@ -274,7 +384,7 @@ export default function PollDetails() {
                     <span className="text-sm font-medium">Total Responses</span>
                   </div>
                   <div className="text-3xl font-bold">
-                    {analytics.totalResponses}
+                    {analyticsData.totalResponses}
                   </div>
                 </div>
                 <div className="p-4 rounded-lg bg-muted/30 border border-border">
@@ -283,7 +393,7 @@ export default function PollDetails() {
                     <span className="text-sm font-medium">Avg. Completion</span>
                   </div>
                   <div className="text-3xl font-bold">
-                    {analytics.averageCompletion}%
+                    {analyticsData.averageCompletion}%
                   </div>
                 </div>
               </div>
@@ -300,7 +410,7 @@ export default function PollDetails() {
             <CardContent className="space-y-4">
               {poll.questions?.length ? (
                 poll.questions.map((question, i) => {
-                  const questionAnalytics = analytics.questionAnalytics[i];
+                  const questionAnalytics = analyticsData.questionAnalytics[i];
                   return (
                     <div
                       key={question._id || i}
@@ -393,54 +503,75 @@ export default function PollDetails() {
               <CardDescription>Get more responses by sharing.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Public Link</label>
+              <div className="rounded-2xl border border-border bg-gradient-to-br from-background via-muted/20 to-primary/5 p-4 space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                      Share link
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Copy or scan the link below to share this poll.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={copyPublicLink}
+                    className="shrink-0 gap-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy
+                  </Button>
+                </div>
+
                 <div className="flex gap-2">
                   <Input
                     readOnly
-                    value={publicLink}
-                    className="bg-muted/50 font-mono text-xs"
+                    value={publicLinkWithPreview}
+                    className="bg-background/70 font-mono text-xs border-border/70"
                   />
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={copyPublicLink}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
                 </div>
+
+                <Button className="w-full gap-2" variant="outline" asChild>
+                  <Link
+                    to={
+                      publicLinkWithPreview.replace(
+                        window.location.origin,
+                        "",
+                      ) || `/p/${id}`
+                    }
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Open Public Page
+                  </Link>
+                </Button>
               </div>
-              <Button className="w-full gap-2" variant="outline" asChild>
-                <Link
-                  to={
-                    publicLinkWithPreview.replace(window.location.origin, "") ||
-                    `/p/${id}`
-                  }
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Open Public Page
-                </Link>
-              </Button>
             </CardContent>
             <CardFooter className="bg-muted/30 border-t border-border p-4 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <img
-                  src={qrUrl}
-                  alt="QR code"
-                  className="w-24 h-24 rounded-md"
-                />
-                <div className="text-sm">
+              <div className="flex items-center gap-4 w-full">
+                <div className="rounded-2xl bg-background p-3 border border-border shadow-sm">
+                  <img
+                    src={qrUrl}
+                    alt="QR code"
+                    className="w-28 h-28 rounded-xl bg-white p-1"
+                  />
+                </div>
+                <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <QrCode className="w-4 h-4 text-muted-foreground" />
-                    <span>QR Code</span>
+                    <QrCode className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold">QR Code</span>
                   </div>
+                  <p className="text-xs text-muted-foreground max-w-[18rem]">
+                    Scan to open the poll on mobile. The code encodes the same
+                    share link shown above.
+                  </p>
                   <a
                     href={qrUrl}
                     download={`poll-${id}-qr.png`}
-                    className="mt-2 inline-block text-sm text-primary underline"
+                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 transition-colors"
                   >
-                    Download PNG
+                    <Share2 className="w-4 h-4" />
+                    Download QR PNG
                   </a>
                 </div>
               </div>
@@ -462,7 +593,7 @@ export default function PollDetails() {
                     Responses
                   </p>
                   <p className="mt-1 text-xl font-bold">
-                    {analytics.totalResponses}
+                    {analyticsData.totalResponses}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border bg-muted/30 p-3">
@@ -470,7 +601,7 @@ export default function PollDetails() {
                     Completion
                   </p>
                   <p className="mt-1 text-xl font-bold">
-                    {analytics.completionPercentage}%
+                    {analyticsData.completionPercentage}%
                   </p>
                 </div>
               </div>
@@ -479,7 +610,7 @@ export default function PollDetails() {
                 <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                   Question breakdown
                 </p>
-                {analytics.questionAnalytics
+                {analyticsData.questionAnalytics
                   ?.slice(0, 3)
                   .map((question, index) => (
                     <div

@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import PollFormBuilder from "../../components/polls/PollFormBuilder";
 import {
   createPoll,
-  publishPollResults,
+  publishPoll,
   type PollFormValues,
 } from "../../services/pollService";
 
@@ -31,7 +31,7 @@ export default function CreatePoll() {
 
   const handlePublish = async (values: PollFormValues) => {
     const created = await createPoll(values);
-    await publishPollResults(created._id);
+    await publishPoll(created._id);
     navigate(`/app/polls/${created._id}`);
   };
 
@@ -43,6 +43,7 @@ export default function CreatePoll() {
       subtitle="Design a premium single-choice poll with dynamic questions, expiry controls, and publishing settings."
       onSave={handleSave}
       onPublish={handlePublish}
+      publishLabel="Publish Poll"
       onCancel={() => navigate(-1)}
     />
   );

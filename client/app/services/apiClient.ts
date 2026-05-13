@@ -4,8 +4,7 @@
  */
 
 import { getAccessToken } from "./authService";
-
-const API_BASE_URL = "http://localhost:3300/api";
+import { API_BASE_URL } from "./runtimeConfig";
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -33,7 +32,9 @@ async function request<T = any>(
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${url}`, {
+  const requestUrl = `${API_BASE_URL}${url}`;
+
+  const response = await fetch(requestUrl, {
     ...fetchOptions,
     headers,
     credentials: "include", // Include cookies for session-based auth if needed

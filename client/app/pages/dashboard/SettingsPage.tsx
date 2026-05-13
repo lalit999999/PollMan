@@ -16,6 +16,7 @@ import {
   getProfile,
 } from "../../services/userService";
 import { useState, useEffect } from "react";
+import { AUTH_BASE_URL } from "../../services/runtimeConfig";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -215,12 +216,6 @@ export default function SettingsPage() {
   );
 }
 
-async function handleSave(this: any) {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { user, setUser } = useAuth() as any;
-  // since this function is defined outside the component scope we call getProfile after update
-}
-
 function ConnectedAccount({
   provider,
   icon,
@@ -235,8 +230,8 @@ function ConnectedAccount({
 
   const connectUrl =
     provider === "google"
-      ? "http://localhost:3300/api/auth/google"
-      : "http://localhost:3300/api/auth/github";
+      ? `${AUTH_BASE_URL}/google`
+      : `${AUTH_BASE_URL}/github`;
 
   async function handleDisconnect() {
     if (!connected) return;

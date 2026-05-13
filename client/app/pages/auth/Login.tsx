@@ -1,14 +1,15 @@
 import { Link } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Github } from "lucide-react";
+import { AUTH_BASE_URL } from "../../services/runtimeConfig";
 
 export default function Login() {
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:3300/api/auth/google";
+    window.location.href = `${AUTH_BASE_URL}/google`;
   };
 
   const handleGithubLogin = () => {
-    window.location.href = "http://localhost:3300/api/auth/github";
+    window.location.href = `${AUTH_BASE_URL}/github`;
   };
 
   return (
