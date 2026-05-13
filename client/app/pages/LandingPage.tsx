@@ -14,6 +14,7 @@ import {
   Github,
   Linkedin,
   Mail,
+  X,
 } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { useAuth } from "../context/AuthContext";
@@ -45,6 +46,9 @@ export default function LandingPage() {
       desc: "Enterprise-grade security ensuring your data remains protected.",
     },
   ];
+
+  // Lightbox state
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
@@ -292,32 +296,34 @@ export default function LandingPage() {
                   Dashboard Preview
                 </h3>
                 <img
-                  src="/content/screenshot-dashboard.png"
+                  src="/content/dashboardpage.png"
                   alt="Dashboard Screenshot"
-                  className="w-full rounded-lg border"
+                  className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setSelectedImage("/content/dashboardpage.png")}
                 />
               </Card>
               <Card className="p-6 glass">
                 <h3 className="text-xl font-semibold mb-4">Analytics View</h3>
                 <img
-                  src="/content/screenshot-analytics.png"
+                  src="/content/pollanalytics.png"
                   alt="Analytics Screenshot"
-                  className="w-full rounded-lg border"
+                  className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setSelectedImage("/content/pollanalytics.png")}
                 />
               </Card>
             </div>
 
             <div className="text-center">
               <Card className="p-6 glass max-w-2xl mx-auto">
-                <h3 className="text-xl font-semibold mb-4">Demo Video</h3>
-                <video
-                  src="/content/demo-video.mp4"
-                  controls
-                  className="w-full rounded-lg"
-                  poster="/content/video-poster.png"
-                >
-                  Your browser does not support the video tag.
-                </video>
+                <h3 className="text-xl font-semibold mb-4">Live Results</h3>
+                <img
+                  src="/content/liveresultspage.png"
+                  alt="Live Results Screenshot"
+                  className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() =>
+                    setSelectedImage("/content/liveresultspage.png")
+                  }
+                />
               </Card>
             </div>
           </div>
@@ -329,7 +335,7 @@ export default function LandingPage() {
             <h2 className="text-3xl font-bold mb-8">Meet the Developer</h2>
             <Card className="p-8 glass max-w-md mx-auto">
               <img
-                src="/content/developer-avatar.png"
+                src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778235248/WhatsApp_Image_2026-05-08_at_15.43.16_hkrbuz.jpg"
                 alt="Developer"
                 className="w-24 h-24 rounded-full mx-auto mb-6 object-cover"
               />
@@ -339,7 +345,7 @@ export default function LandingPage() {
               </p>
               <div className="flex justify-center gap-4">
                 <a
-                  href="https://github.com/lalit79"
+                  href="https://github.com/lalit999999"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary"
@@ -347,7 +353,7 @@ export default function LandingPage() {
                   <Github className="h-5 w-5" />
                 </a>
                 <a
-                  href="https://linkedin.com/in/lalit79"
+                  href="https://linkedin.com/in/lalitgujar"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary"
@@ -355,7 +361,7 @@ export default function LandingPage() {
                   <Linkedin className="h-5 w-5" />
                 </a>
                 <a
-                  href="mailto:lalit@example.com"
+                  href="mailto:gujarlalit79@gmail.com"
                   className="text-muted-foreground hover:text-primary"
                 >
                   <Mail className="h-5 w-5" />
@@ -367,6 +373,31 @@ export default function LandingPage() {
       </main>
 
       <Footer />
+
+      {/* Lightbox Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedImage}
+              alt="Preview"
+              className="max-w-full max-h-[90vh] rounded-lg object-contain"
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -38,6 +38,12 @@ export default function Login() {
       {/* Auth Panel */}
       <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-card">
         <div className="max-w-sm w-full mx-auto space-y-8">
+          <div className="flex justify-end">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/">Go to Home</Link>
+            </Button>
+          </div>
+
           <div className="space-y-2 text-center md:text-left">
             <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
             <p className="text-sm text-muted-foreground">
@@ -78,14 +84,14 @@ export default function Login() {
           <p className="text-center text-sm text-muted-foreground pt-4">
             By clicking continue, you agree to our <br />
             <Link
-              to="#"
+              to="/terms"
               className="underline underline-offset-4 hover:text-primary"
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
-              to="#"
+              to="/privacy"
               className="underline underline-offset-4 hover:text-primary"
             >
               Privacy Policy
