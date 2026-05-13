@@ -39,11 +39,9 @@ export default function DashboardLayout() {
   const SidebarContent = () => (
     <>
       <div className="flex items-center gap-3 px-6 py-8">
-        <img
-          src="/content/logo.png"
-          alt="POLLMAN"
-          className="w-8 h-8 rounded-lg object-cover"
-        />
+        <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+          PM
+        </div>
         <span className="font-semibold text-lg tracking-tight">POLLMAN</span>
       </div>
 
@@ -140,16 +138,19 @@ export default function DashboardLayout() {
           </button>
 
           <div className="flex items-center gap-3 ml-auto">
-            <div className="flex items-center gap-2 px-2">
-              <img
-                src={user?.avatar || "/content/logo.png"}
-                alt={user?.name}
-                className="w-8 h-8 rounded-full"
-              />
+            <div className="flex items-center gap-3 rounded-full border border-border bg-muted/30 px-3 py-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                {(user?.name || "U")
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </div>
 
-              <div className="hidden sm:block">
+              <div className="hidden sm:block leading-tight">
                 <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-muted-foreground">Creator</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
           </div>

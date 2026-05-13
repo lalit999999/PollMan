@@ -4,14 +4,7 @@ import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Card } from "../../components/ui/card";
-import {
-  Search,
-  Filter,
-  Plus,
-  MoreVertical,
-  BarChart2,
-  Copy,
-} from "lucide-react";
+import { Search, Filter, Plus, MoreVertical, Copy } from "lucide-react";
 import { motion } from "motion/react";
 import { getMyPolls, ApiPoll } from "../../services/pollService";
 import { toast } from "sonner";
@@ -160,17 +153,6 @@ export default function MyPolls() {
                       {(poll as any).totalResponses || 0} responses
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:text-primary"
-                        title="Analytics"
-                      >
-                        <Link to={`/app/polls/${poll._id}/analytics`}>
-                          <BarChart2 className="w-4 h-4" />
-                        </Link>
-                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
