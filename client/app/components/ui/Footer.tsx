@@ -59,7 +59,7 @@ export default function Footer() {
             <h3 className="font-semibold">Connect</h3>
             <div className="flex gap-4">
               <a
-                href="https://github.com/fakeuser/pollman"
+                href="https://github.com/lalit999999"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
@@ -67,7 +67,7 @@ export default function Footer() {
                 <Github className="h-5 w-5" />
               </a>
               <a
-                href="https://twitter.com/fakeuser"
+                href="https://twitter.com/lalit7363"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
@@ -75,7 +75,7 @@ export default function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="https://linkedin.com/in/fakeuser"
+                href="https://linkedin.com/in/lalitgujar"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
@@ -83,7 +83,7 @@ export default function Footer() {
                 <Linkedin className="h-5 w-5" />
               </a>
               <a
-                href="mailto:fake@email.com"
+                href="mailto:gujarlalit79@gmail.com"
                 className="text-muted-foreground hover:text-primary"
               >
                 <Mail className="h-5 w-5" />
@@ -96,28 +96,44 @@ export default function Footer() {
             <h3 className="font-semibold">Other Projects</h3>
             <div className="space-y-2">
               <a
-                href="https://fakeproject1.com"
+                href="https://wdc.lalitgurjar.in"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
               >
-                Project One <ExternalLink className="h-3 w-3" />
+                WDC Induction Portal <ExternalLink className="h-3 w-3" />
               </a>
               <a
-                href="https://fakeproject2.com"
+                href="https://l-s-p.lalitgurjar.in"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
               >
-                Project Two <ExternalLink className="h-3 w-3" />
+                Local Service Provider <ExternalLink className="h-3 w-3" />
               </a>
               <a
-                href="https://fakeproject3.com"
+                href="https://onem-check-box.onrender.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
               >
-                Project Three <ExternalLink className="h-3 w-3" />
+                1M Checkbox App <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href="https://www.lalitgurjar.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
+              >
+                Portfolio Website <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href="https://realtime-rider-location-tracting.onrender.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
+              >
+                Rider Location Tracking <ExternalLink className="h-3 w-3" />
               </a>
             </div>
           </div>

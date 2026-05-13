@@ -12,6 +12,7 @@ const connectDB = async () => {
             minPoolSize: 5,
             socketTimeoutMS: 30000,
             serverSelectionTimeoutMS: 5000,
+            ssl: true,
         });
 
         console.log("✅ MongoDB connected successfully");
