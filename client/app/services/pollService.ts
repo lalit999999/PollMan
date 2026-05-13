@@ -20,6 +20,7 @@ export type PollFormValues = {
 };
 
 type ApiPollOption = {
+  _id?: string;
   text: string;
   count?: number;
 };
@@ -38,7 +39,11 @@ export type ApiPoll = {
   isAnonymous: boolean;
   allowResultsPublish: boolean;
   resultsPublished?: boolean;
+  totalResponses?: number;
+  status?: string;
+  isPublished?: boolean;
   expiresAt: string | null;
+  createdAt?: string;
   questions: ApiPollQuestion[];
   createdBy?: string;
 };
@@ -87,6 +92,31 @@ export async function getPollById(pollId: string) {
   return response.data;
 }
 
+export async function getMyPolls(filters?: {
+  status?: string;
+  search?: string;
+  sort?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const params = new URLSearchParams();
+  if (filters) {
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value.toString());
+    });
+  }
+
+  const response = await apiClient.get<
+    ApiResponse<{
+      polls: ApiPoll[];
+      total: number;
+      page: number;
+      pages: number;
+    }>
+  >(`/polls?${params.toString()}`);
+  return response.data;
+}
+
 export async function updatePoll(pollId: string, values: PollFormValues) {
   const response = await apiClient.patch<ApiResponse<ApiPoll>>(
     `/polls/${pollId}`,
@@ -98,6 +128,36 @@ export async function updatePoll(pollId: string, values: PollFormValues) {
 export async function publishPollResults(pollId: string) {
   const response = await apiClient.post<ApiResponse<ApiPoll>>(
     `/polls/${pollId}/publish`,
+  );
+  return response.data;
+}
+
+export async function getPollAnalytics(pollId: string) {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/polls/${pollId}/analytics`,
+  );
+  return response.data;
+}
+
+export async function deletePoll(pollId: string) {
+  const response = await apiClient.delete<ApiResponse<{ message: string }>>(
+    `/polls/${pollId}`,
+  );
+  return response.data;
+}
+
+export type PollAnswer = {
+  questionId: string;
+  selectedOption: string;
+};
+
+export async function submitPollResponse(
+  pollId: string,
+  answers: PollAnswer[],
+) {
+  const response = await apiClient.post<ApiResponse<{ message: string }>>(
+    `/polls/${pollId}/respond`,
+    { answers },
   );
   return response.data;
 }

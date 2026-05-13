@@ -38,6 +38,8 @@ export default function DashboardLayout() {
     navigate("/login", { replace: true });
   };
 
+
+
   const SidebarContent = () => (
     <>
       <div className="flex items-center gap-3 px-6 py-8">
@@ -140,6 +142,8 @@ export default function DashboardLayout() {
           >
             <Menu className="w-5 h-5" />
           </button>
+
+
 
           <div className="flex items-center gap-3 ml-auto">
             <div className="flex items-center gap-2 px-2">

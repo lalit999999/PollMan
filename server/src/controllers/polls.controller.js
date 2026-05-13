@@ -1,5 +1,5 @@
-import { Poll, Response } from "../models/index.js";
-import { getUserPolls } from "../validators/poll.validator.js";
+import { Poll, Response, Question } from "../models/index.js";
+import { getUserPolls } from "../services/polls.service.js";
 
 export async function handleGetUserPolls(req, res) {
     try {

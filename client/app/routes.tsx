@@ -46,7 +46,7 @@ export const router = createBrowserRouter([
               { path: "polls/new", element: <CreatePoll /> },
               { path: "polls/:id/edit", element: <EditPoll /> },
               { path: "polls/:id", element: <PollDetails /> },
-              { path: "analytics", element: <AnalyticsDashboard /> },
+              { path: "polls/:id/analytics", element: <AnalyticsDashboard /> },
               { path: "settings", element: <SettingsPage /> },
             ],
           },

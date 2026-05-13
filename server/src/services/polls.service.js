@@ -9,7 +9,7 @@ export async function getUserPolls(userId, filters = {}) {
         skip = 0,
     } = filters;
 
-    const query = { createdBy: userId };
+    const query = {};
 
     // Filter by status
     if (status) {

@@ -7,10 +7,17 @@ import {
     handleSubmitResponse,
     handleGetAnalytics,
 } from "../controllers/poll.controller.js";
+import {
+    handleGetUserPolls,
+    handleDeletePoll
+} from "../controllers/polls.controller.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { optionalAuthMiddleware } from "../middleware/auth.js";
 
 const router = Router();
+
+// Get current user's polls (protected)
+router.get("/", authMiddleware, handleGetUserPolls);
 
 // Create poll (protected - authenticated users only)
 router.post("/", authMiddleware, handleCreatePoll);
@@ -20,6 +27,9 @@ router.get("/:id", optionalAuthMiddleware, handleGetPoll);
 
 // Update poll (protected - only creator)
 router.patch("/:id", authMiddleware, handleUpdatePoll);
+
+// Delete poll (protected - only creator)
+router.delete("/:id", authMiddleware, handleDeletePoll);
 
 // Publish results (protected - only creator)
 router.post("/:id/publish", authMiddleware, handlePublishResults);
