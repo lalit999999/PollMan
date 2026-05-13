@@ -43,6 +43,7 @@ import {
   type ApiPoll,
 } from "../../services/pollService";
 import { useAuth } from "../../context/AuthContext";
+import { connectSocket, disconnectSocket } from "../../lib/socketClient";
 
 type PollAnalytics = {
   pollId: string;
