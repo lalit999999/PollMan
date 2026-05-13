@@ -99,10 +99,19 @@ export default function PollDetails() {
           getPollAnalytics(id),
         ]);
 
-        setPoll(pollResponse);
-        setAnalytics(analyticsResponse.data as PollAnalytics);
+        console.log("Poll Response:", pollResponse);
+        console.log("Analytics Response:", analyticsResponse);
+
+        // Extract data if wrapped in response object
+        const pollData = (pollResponse as any).data || pollResponse;
+        const analyticsData =
+          (analyticsResponse as any).data || analyticsResponse;
+
+        setPoll(pollData as ApiPoll);
+        setAnalytics(analyticsData as PollAnalytics);
       } catch (error: any) {
         console.error("Error loading poll details:", error);
+        console.error("Error response:", error.response);
         toast.error(
           error.response?.data?.message || "Failed to load poll details.",
         );

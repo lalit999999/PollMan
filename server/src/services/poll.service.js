@@ -208,20 +208,37 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
         throw new Error("Poll not found");
     }
 
+    // Check if user is the creator of the poll
+    if (userId && poll.createdBy.toString() === userId.toString()) {
+        throw new Error("Poll creators cannot answer their own polls");
+    }
+
     // Check expiry
     if (poll.expiresAt && new Date() > new Date(poll.expiresAt)) {
         throw new Error("Poll has expired");
     }
 
-    // Check if user already responded (for authenticated pollees)
-    if (userId && !poll.isAnonymous) {
+    // Check if user already responded
+    if (userId) {
+        // Authenticated users: check by userId
         const existingResponse = await Response.findOne({
             pollId,
             userId,
         });
 
         if (existingResponse) {
-            throw new Error("You have already responded to this poll");
+            throw new Error("You have already responded to this poll. Only one response allowed per user.");
+        }
+    } else if (poll.isAnonymous && ipAddress) {
+        // Anonymous users: check by IP address
+        const existingResponse = await Response.findOne({
+            pollId,
+            ipAddress,
+            isAnonymous: true,
+        });
+
+        if (existingResponse) {
+            throw new Error("You have already responded to this poll. Only one response allowed per device.");
         }
     }
 

@@ -27,6 +27,13 @@ export async function handleCreatePoll(req, res) {
             });
         }
 
+        if (!expiresAt) {
+            return res.status(400).json({
+                success: false,
+                message: "Expiry date is required for creating a poll",
+            });
+        }
+
         const poll = await createPoll(req.user._id, {
             title,
             description,
