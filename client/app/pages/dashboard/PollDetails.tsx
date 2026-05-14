@@ -651,21 +651,19 @@ export default function PollDetails() {
                 <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                   Question breakdown
                 </p>
-                {analyticsData.questionAnalytics
-                  ?.slice(0, 3)
-                  .map((question, index) => (
-                    <div
-                      key={question.questionId || index}
-                      className="flex items-center justify-between gap-3 text-sm"
-                    >
-                      <span className="text-muted-foreground truncate">
-                        Q{index + 1}
-                      </span>
-                      <span className="font-medium">
-                        {question.totalResponses} votes
-                      </span>
-                    </div>
-                  ))}
+                {analyticsData.questionAnalytics?.map((question, index) => (
+                  <div
+                    key={question.questionId || index}
+                    className="flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-muted-foreground truncate">
+                      Q{index + 1}
+                    </span>
+                    <span className="font-medium">
+                      {question.totalResponses} votes
+                    </span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
