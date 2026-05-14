@@ -176,12 +176,25 @@ export default function PollDetails() {
 
   // Socket.IO real-time updates
   useEffect(() => {
-    if (!user?.id || !id) return;
+    if (!id) return;
 
     const socket = connectSocket();
 
-    // Join creator room for analytics updates
-    socket.emit("join:creator", user.id);
+    const joinCreatorRoom = () => {
+      const socketId = socket.id;
+      if (!socketId) return;
+
+      socket.emit("join:creator", {
+        userId: user?._id,
+        socketId,
+      });
+    };
+
+    if (socket.connected) {
+      joinCreatorRoom();
+    } else {
+      socket.on("connect", joinCreatorRoom);
+    }
 
     // Listen for real-time analytics updates
     const handleAnalyticsUpdate = (data: any) => {
@@ -195,10 +208,11 @@ export default function PollDetails() {
     socket.on("poll:analytics:update", handleAnalyticsUpdate);
 
     return () => {
+      socket.off("connect", joinCreatorRoom);
       socket.off("poll:analytics:update", handleAnalyticsUpdate);
       disconnectSocket();
     };
-  }, [user?.id, id]);
+  }, [user?._id, id]);
   const publicLinkWithPreview = isCreator
     ? `${publicLink}?preview=1`
     : publicLink;

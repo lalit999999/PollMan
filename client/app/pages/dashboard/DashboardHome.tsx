@@ -61,12 +61,23 @@ export default function DashboardHome() {
 
   // Socket connection for real-time updates
   useEffect(() => {
-    if (!user?._id) return;
-
     const socket = connectSocket();
 
-    // Join creator room for real-time updates
-    socket.emit("join", `creator:${user._id}`);
+    const joinCreatorRoom = () => {
+      const socketId = socket.id;
+      if (!socketId) return;
+
+      socket.emit("join:creator", {
+        userId: user?._id,
+        socketId,
+      });
+    };
+
+    if (socket.connected) {
+      joinCreatorRoom();
+    } else {
+      socket.on("connect", joinCreatorRoom);
+    }
 
     // Listen for analytics updates
     const handleAnalyticsUpdate = (data: any) => {
@@ -86,6 +97,7 @@ export default function DashboardHome() {
     socket.on("poll:analytics:update", handleAnalyticsUpdate);
 
     return () => {
+      socket.off("connect", joinCreatorRoom);
       socket.off("poll:analytics:update", handleAnalyticsUpdate);
       disconnectSocket();
     };

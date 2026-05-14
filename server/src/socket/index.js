@@ -41,9 +41,15 @@ export function initializeSocket(io) {
             socket.join(`poll:${pollId}`);
         });
 
-        socket.on("join:creator", (userId) => {
-            if (!userId) return;
-            socket.join(`creator:${userId}`);
+        socket.on("join:creator", (payload) => {
+            const userId = typeof payload === "string" ? payload : payload?.userId;
+            const socketId = typeof payload === "string" ? socket.id : payload?.socketId || socket.id;
+            if (!socketId) return;
+
+            socket.join(`creator:${socketId}`);
+            if (userId) {
+                socket.join(`creator:${userId}`);
+            }
         });
 
         socket.on("disconnect", () => {
