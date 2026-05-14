@@ -62,7 +62,7 @@ export default function PublicPoll() {
         setPoll(pollData);
 
         // Initialize live response count with current response count
-        setLiveResponseCount(pollData.responseCount || 0);
+        setLiveResponseCount(pollData.totalResponses || 0);
 
         if (
           responseStorageKey &&
@@ -519,7 +519,7 @@ export default function PublicPoll() {
             )}
             <div className="mt-4 flex items-center gap-2">
               <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <Users className="w-4 h-4" />
+                <User className="w-4 h-4" />
                 {liveResponseCount}{" "}
                 {liveResponseCount === 1 ? "response" : "responses"}
               </div>
