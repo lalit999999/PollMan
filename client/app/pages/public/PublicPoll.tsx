@@ -61,6 +61,9 @@ export default function PublicPoll() {
         const pollData = ((response as any).data ?? response) as ApiPoll;
         setPoll(pollData);
 
+        // Initialize live response count with current response count
+        setLiveResponseCount(pollData.responseCount || 0);
+
         if (
           responseStorageKey &&
           localStorage.getItem(responseStorageKey) === "true"
@@ -102,6 +105,31 @@ export default function PublicPoll() {
 
     void loadPoll();
   }, [id, user?._id, responseStorageKey]);
+
+  // Socket.IO real-time updates for live response count
+  useEffect(() => {
+    if (!id || !poll?.isPublished) return;
+
+    const socket = connectSocket();
+
+    // Join poll room for live response updates
+    socket.emit("join:poll", id);
+
+    // Listen for new responses to update live count
+    const handleResponseNew = (data: any) => {
+      if (data.pollId === id) {
+        console.log("Live response update received:", data);
+        setLiveResponseCount((prev) => prev + 1);
+      }
+    };
+
+    socket.on("poll:response:new", handleResponseNew);
+
+    return () => {
+      socket.off("poll:response:new", handleResponseNew);
+      disconnectSocket();
+    };
+  }, [id, poll?.isPublished]);
 
   const handleNext = async () => {
     if (!selected) {
@@ -489,6 +517,13 @@ export default function PublicPoll() {
             {poll.description && (
               <p className="text-muted-foreground">{poll.description}</p>
             )}
+            <div className="mt-4 flex items-center gap-2">
+              <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                <Users className="w-4 h-4" />
+                {liveResponseCount}{" "}
+                {liveResponseCount === 1 ? "response" : "responses"}
+              </div>
+            </div>
           </div>
 
           <div className="mb-8 text-sm font-medium text-muted-foreground tracking-widest uppercase">

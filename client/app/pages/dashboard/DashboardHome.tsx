@@ -27,6 +27,8 @@ import {
 } from "recharts";
 import { getDashboardOverview } from "../../services/pollService";
 import { toast } from "sonner";
+import { connectSocket, disconnectSocket } from "../../lib/socketClient";
+import { useAuth } from "../../context/AuthContext";
 
 function formatTime(value?: string) {
   if (!value) return "—";
@@ -36,6 +38,7 @@ function formatTime(value?: string) {
 export default function DashboardHome() {
   const [overview, setOverview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     const load = async () => {
@@ -55,6 +58,38 @@ export default function DashboardHome() {
 
     void load();
   }, []);
+
+  // Socket connection for real-time updates
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const socket = connectSocket();
+
+    // Join creator room for real-time updates
+    socket.emit("join", `creator:${user._id}`);
+
+    // Listen for analytics updates
+    const handleAnalyticsUpdate = (data: any) => {
+      console.log("Dashboard analytics update received:", data);
+      // Refresh dashboard data when analytics change
+      const load = async () => {
+        try {
+          const updatedData = await getDashboardOverview();
+          setOverview(updatedData);
+        } catch (error) {
+          console.error("Failed to refresh dashboard overview", error);
+        }
+      };
+      void load();
+    };
+
+    socket.on("poll:analytics:update", handleAnalyticsUpdate);
+
+    return () => {
+      socket.off("poll:analytics:update", handleAnalyticsUpdate);
+      disconnectSocket();
+    };
+  }, [user?._id]);
 
   const timeline = useMemo(() => overview?.activityTimeline || [], [overview]);
 
