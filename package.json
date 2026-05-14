@@ -9,7 +9,7 @@
     "server:start": "node server/src/server.js",
     "build": "vite build",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "start": "concurrently \"npm run server:start\" \"npm run client:dev\""
+    "start": "npm run build && npm run server:start"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
