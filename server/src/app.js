@@ -55,7 +55,7 @@ app.use("/api", apiRoutes);
 
 // Catch all handler: send back React's index.html file for client-side routing
 if (env.NODE_ENV === "production") {
-    app.get("/*", (req, res) => {
+    app.use((req, res) => {
         res.sendFile(path.join(__dirname, "../../dist/index.html"));
     });
 } else {
@@ -69,5 +69,6 @@ if (env.NODE_ENV === "production") {
 
 app.use(notFound);
 app.use(errorHandler);
+
 
 export default app;
