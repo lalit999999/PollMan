@@ -146,11 +146,13 @@ export default function Documentation() {
                 </CardHeader>
                 <CardContent>
                   <img
-                    src="/content/dashboardpage.png"
+                    src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721387/dashboardpage_mibopi.png"
                     alt="Dashboard Screenshot"
                     className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() =>
-                      setSelectedImage("/content/dashboardpage.png")
+                      setSelectedImage(
+                        "https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721387/dashboardpage_mibopi.png",
+                      )
                     }
                   />
                 </CardContent>
@@ -161,11 +163,13 @@ export default function Documentation() {
                 </CardHeader>
                 <CardContent>
                   <img
-                    src="/content/pollanalytics.png"
+                    src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721387/pollanalytics_dosl0k.png"
                     alt="Analytics Screenshot"
                     className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() =>
-                      setSelectedImage("/content/pollanalytics.png")
+                      setSelectedImage(
+                        "https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721387/pollanalytics_dosl0k.png",
+                      )
                     }
                   />
                 </CardContent>
@@ -177,11 +181,13 @@ export default function Documentation() {
               </CardHeader>
               <CardContent>
                 <img
-                  src="/content/liveresultspage.png"
+                  src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721385/liveresultspage_o7wjij.png"
                   alt="Live Results Screenshot"
                   className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() =>
-                    setSelectedImage("/content/liveresultspage.png")
+                    setSelectedImage(
+                      "https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721385/liveresultspage_o7wjij.png",
+                    )
                   }
                 />
               </CardContent>

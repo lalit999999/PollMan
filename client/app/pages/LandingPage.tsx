@@ -59,7 +59,7 @@ export default function LandingPage() {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 lg:px-12">
           <div className="flex items-center gap-3">
             <img
-              src="/content/logo.png"
+              src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721396/logo_wsb8xy.png"
               alt="POLLMAN"
               className="w-10 h-10 rounded-2xl object-cover"
             />
@@ -121,7 +121,10 @@ export default function LandingPage() {
             ) : (
               <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/60 px-4 py-2">
                 <img
-                  src={user.avatar || "/content/logo.png"}
+                  src={
+                    user.avatar ||
+                    "https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721396/logo_wsb8xy.png"
+                  }
                   alt={user.name || "avatar"}
                   className="h-9 w-9 rounded-full object-cover"
                 />
@@ -296,19 +299,27 @@ export default function LandingPage() {
                   Dashboard Preview
                 </h3>
                 <img
-                  src="/content/dashboardpage.png"
+                  src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721387/dashboardpage_mibopi.png"
                   alt="Dashboard Screenshot"
                   className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setSelectedImage("/content/dashboardpage.png")}
+                  onClick={() =>
+                    setSelectedImage(
+                      "https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721387/dashboardpage_mibopi.png",
+                    )
+                  }
                 />
               </Card>
               <Card className="p-6 glass">
                 <h3 className="text-xl font-semibold mb-4">Analytics View</h3>
                 <img
-                  src="/content/pollanalytics.png"
+                  src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721387/pollanalytics_dosl0k.png"
                   alt="Analytics Screenshot"
                   className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setSelectedImage("/content/pollanalytics.png")}
+                  onClick={() =>
+                    setSelectedImage(
+                      "https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721387/pollanalytics_dosl0k.png",
+                    )
+                  }
                 />
               </Card>
             </div>
@@ -317,11 +328,13 @@ export default function LandingPage() {
               <Card className="p-6 glass max-w-2xl mx-auto">
                 <h3 className="text-xl font-semibold mb-4">Live Results</h3>
                 <img
-                  src="/content/liveresultspage.png"
+                  src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721385/liveresultspage_o7wjij.png"
                   alt="Live Results Screenshot"
                   className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() =>
-                    setSelectedImage("/content/liveresultspage.png")
+                    setSelectedImage(
+                      "https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721385/liveresultspage_o7wjij.png",
+                    )
                   }
                 />
               </Card>
@@ -494,7 +507,10 @@ function HeaderRight() {
         <>
           <div className="flex items-center gap-3 text-sm font-medium">
             <img
-              src={user.avatar || "/content/logo.png"}
+              src={
+                user.avatar ||
+                "https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721396/logo_wsb8xy.png"
+              }
               alt={user.name || "avatar"}
               className="w-8 h-8 rounded-full object-cover border border-border"
             />

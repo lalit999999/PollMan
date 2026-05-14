@@ -50,7 +50,7 @@ export default function DashboardLayout() {
     <>
       <div className="flex items-center gap-3 px-6 py-8">
         <img
-          src="/content/logo.png"
+          src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721396/logo_wsb8xy.png"
           alt="POLLMAN"
           className="w-10 h-10 rounded-xl object-cover ring-1 ring-border/60 shadow-sm"
         />
@@ -199,7 +199,7 @@ export default function DashboardLayout() {
                     />
                   ) : (
                     <img
-                      src="/content/logo.png"
+                      src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721396/logo_wsb8xy.png"
                       alt="POLLMAN"
                       className="w-full h-full object-cover"
                     />

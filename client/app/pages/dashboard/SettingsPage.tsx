@@ -79,7 +79,7 @@ export default function SettingsPage() {
                   />
                 ) : (
                   <img
-                    src="/content/logo.png"
+                    src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721396/logo_wsb8xy.png"
                     alt="POLLMAN"
                     className="w-full h-full object-cover"
                   />

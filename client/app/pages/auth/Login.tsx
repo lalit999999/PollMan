@@ -19,7 +19,7 @@ export default function Login() {
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8 text-center">
           <img
-            src="/content/logo.png"
+            src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721396/logo_wsb8xy.png"
             alt="POLLMAN"
             className="w-56 h-56 rounded-[8rem] object-cover shadow-2xl ring-1 ring-white/10"
           />

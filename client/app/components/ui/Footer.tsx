@@ -10,7 +10,7 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <img
-                src="/content/logo.png"
+                src="https://res.cloudinary.com/dsmyka9cr/image/upload/v1778721396/logo_wsb8xy.png"
                 alt="POLLMAN"
                 className="w-8 h-8 rounded-2xl object-cover"
               />
