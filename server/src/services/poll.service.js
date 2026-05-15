@@ -429,7 +429,25 @@ export async function getPollAnalytics(pollId, userId) {
     // Get all responses (populate user info when available)
     const responses = await Response.find({ pollId })
         .sort({ createdAt: 1 })
-        .populate("userId", "name email");
+        .populate("userId", "name email avatar");
+
+    const responseItems = responses.map((r) => ({
+        responseId: r._id,
+        respondedAt: r.createdAt,
+        completionPercentage: r.completionPercentage,
+        isAnonymous: r.isAnonymous,
+        userName: r.userId?.name || null,
+        userEmail: r.userId?.email || null,
+        userAvatar: r.userId?.avatar || null,
+        ipAddress: r.ipAddress || null,
+        responder: r.userId
+            ? (r.userId.name && r.userId.name.trim())
+                ? r.userId.name
+                : (r.userId.email ? r.userId.email.split("@")[0] : r.userId._id.toString())
+            : r.ipAddress || "unknown",
+        responderId: r.userId ? r.userId._id : null,
+        answers: r.answers,
+    }));
 
     // Build analytics
     const questionAnalytics = poll.questions.map((question) => {
@@ -499,38 +517,18 @@ export async function getPollAnalytics(pollId, userId) {
         resultsPublished: poll.resultsPublished,
         questionAnalytics,
         timeline: buildTimelineBuckets(responses),
-        recentResponses: responses
-            .slice(-10)
-            .reverse()
-            .map((r) => ({
-                responseId: r._id,
-                respondedAt: r.createdAt,
-                completionPercentage: r.completionPercentage,
-                isAnonymous: r.isAnonymous,
-                responder: r.userId
-                    ? (r.userId.name && r.userId.name.trim())
-                        ? r.userId.name
-                        : (r.userId.email ? r.userId.email.split("@")[0] : r.userId._id.toString())
-                    : r.ipAddress || "unknown",
-                responderId: r.userId ? r.userId._id : null,
-                answers: r.answers,
-            })),
+        allResponses: responseItems,
+        recentResponses: responseItems.slice(-10).reverse(),
     };
 }
 
 export async function getDashboardOverview(userId) {
-    const [polls, recentLogs] = await Promise.all([
-        Poll.find({ createdBy: userId }).sort({ createdAt: -1 }).select("title description createdAt isPublished resultsPublished expiresAt totalResponses status"),
-        PollAccessLog.find({ userId })
-            .sort({ createdAt: -1 })
-            .limit(12)
-            .lean(),
-    ]);
+    const polls = await Poll.find({ createdBy: userId });
 
-    const pollIds = polls.map((poll) => poll._id);
+    // Get response counts per poll
     const responseCounts = await Response.aggregate([
-        { $match: { pollId: { $in: pollIds } } },
-        { $group: { _id: "$pollId", total: { $sum: 1 } } },
+        { $match: { pollId: { $in: polls.map((p) => p._id) } } },
+        { $group: { _id: "$pollId", total: { $count: {} } } },
     ]);
 
     const responseCountMap = new Map(
@@ -538,10 +536,21 @@ export async function getDashboardOverview(userId) {
     );
 
     const totalResponses = responseCounts.reduce((sum, row) => sum + row.total, 0);
-    const activePolls = polls.filter((poll) => poll.isPublished && (!poll.expiresAt || new Date(poll.expiresAt) > new Date())).length;
+    const activePolls = polls.filter(
+        (poll) =>
+            poll.isPublished &&
+            (!poll.expiresAt || new Date(poll.expiresAt) > new Date()),
+    ).length;
 
+    // Get 7-day activity
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    const recentLogs = await PollAccessLog.find({
+        userId,
+        createdAt: { $gte: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) },
+    });
+
     const dailySeries = Array.from({ length: 7 }, (_, index) => {
         const day = new Date(today);
         day.setDate(today.getDate() - (6 - index));
@@ -581,9 +590,9 @@ export async function getDashboardOverview(userId) {
             resultsPublished: poll.resultsPublished,
             expiresAt: poll.expiresAt,
             status: poll.status,
-            totalResponses: responseCountMap.get(poll._id.toString()) || poll.totalResponses || 0,
+            totalResponses: responseCountMap.get(poll._id.toString()) || 0,
         })),
-        recentActivity: recentLogs.map((log) => ({
+        recentActivity: recentLogs.slice(0, 10).map((log) => ({
             _id: log._id,
             action: log.action,
             metadata: log.metadata || {},

@@ -12,6 +12,19 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../components/ui/avatar";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -69,10 +82,37 @@ type PollAnalytics = {
     hourly?: Array<{ bucket: string; count: number }>;
     daily?: Array<{ bucket: string; count: number }>;
   };
-  recentResponses?: Array<{
+  allResponses?: Array<{
+    responseId?: string;
+    responder: string;
+    userName?: string | null;
+    userEmail?: string | null;
+    userAvatar?: string | null;
+    ipAddress?: string | null;
+    responderId?: string | null;
     respondedAt: string;
     completionPercentage: number;
     isAnonymous: boolean;
+    answers?: Array<{
+      questionId: string;
+      selectedOption: string;
+    }>;
+  }>;
+  recentResponses?: Array<{
+    responseId?: string;
+    responder: string;
+    userName?: string | null;
+    userEmail?: string | null;
+    userAvatar?: string | null;
+    ipAddress?: string | null;
+    responderId?: string | null;
+    respondedAt: string;
+    completionPercentage: number;
+    isAnonymous: boolean;
+    answers?: Array<{
+      questionId: string;
+      selectedOption: string;
+    }>;
   }>;
 };
 
@@ -299,8 +339,19 @@ export default function PollDetails() {
       })),
     })),
     timeline: { hourly: [], daily: [] },
+    allResponses: [],
     recentResponses: [],
   };
+
+  const responseDetails =
+    analyticsData.allResponses ?? analyticsData.recentResponses ?? [];
+  const questionLookup = useMemo(
+    () =>
+      new Map(
+        (poll.questions || []).map((question) => [question._id, question.text]),
+      ),
+    [poll.questions],
+  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
@@ -328,6 +379,139 @@ export default function PollDetails() {
               Edit
             </Link>
           </Button>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="secondary" className="gap-2">
+                <BarChart2 className="w-4 h-4" />
+                Responses ({responseDetails.length})
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Poll responses</DialogTitle>
+                <DialogDescription>
+                  View every response with the respondent name, profile photo,
+                  selected answers, IP fallback, and timestamp.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="mt-2 flex-1 overflow-y-auto space-y-4 pr-1">
+                {responseDetails.length ? (
+                  responseDetails.map((response, index) => {
+                    const displayName =
+                      response.userName ||
+                      response.ipAddress ||
+                      response.responder ||
+                      "Unknown responder";
+                    const answerRows = (response.answers || []).map(
+                      (answer) => ({
+                        questionText:
+                          questionLookup.get(answer.questionId) || "Question",
+                        selectedOption: answer.selectedOption,
+                      }),
+                    );
+
+                    return (
+                      <div
+                        key={
+                          response.responseId ||
+                          `${response.respondedAt}-${index}`
+                        }
+                        className="rounded-2xl border border-border bg-muted/10 p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar className="size-12 border border-border">
+                              <AvatarImage
+                                src={response.userAvatar || undefined}
+                                alt={displayName}
+                              />
+                              <AvatarFallback>
+                                {displayName
+                                  .split(" ")
+                                  .map((part) => part[0])
+                                  .filter(Boolean)
+                                  .slice(0, 2)
+                                  .join("")
+                                  .toUpperCase() || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold truncate">
+                                  {displayName}
+                                </p>
+                                <Badge variant="outline">
+                                  {response.completionPercentage}% complete
+                                </Badge>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                <span>
+                                  {response.userName
+                                    ? "Logged in user"
+                                    : "IP identified"}
+                                </span>
+                                {response.ipAddress ? (
+                                  <span>• IP: {response.ipAddress}</span>
+                                ) : null}
+                                <span>
+                                  • {formatDate(response.respondedAt)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span>
+                              {response.isAnonymous
+                                ? "Anonymous"
+                                : "Identified"}
+                            </span>
+                            {response.responderId ? (
+                              <span>• User ID: {response.responderId}</span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-2">
+                          {answerRows.length ? (
+                            answerRows.map((answer, answerIndex) => (
+                              <div
+                                key={`${response.responseId || index}-${answerIndex}`}
+                                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background/70 px-3 py-2 text-sm"
+                              >
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">
+                                    {answer.questionText}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Selected response
+                                  </p>
+                                </div>
+                                <Badge variant="secondary" className="shrink-0">
+                                  {answer.selectedOption}
+                                </Badge>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-xl border border-dashed border-border bg-background/60 px-3 py-4 text-sm text-muted-foreground">
+                              No answers found for this response.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                    No responses yet.
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {!poll.isPublished ? (
             <Button onClick={() => setPublishMode("publish")}>Publish</Button>
           ) : !poll.resultsPublished ? (
