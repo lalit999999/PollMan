@@ -287,9 +287,12 @@ export default function DashboardHome() {
                     to={`/app/polls/${poll._id}`}
                     className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    <div className="space-y-1 truncate pr-4">
+                    <div className="space-y-1 truncate pr-4 max-w-[70%]">
                       <p className="font-medium leading-none truncate">
                         {poll.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {poll.description || "No description provided."}
                       </p>
                       <div className="flex items-center text-xs text-muted-foreground gap-2">
                         <span>{poll.totalResponses || 0} responses</span>

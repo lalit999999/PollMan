@@ -102,14 +102,14 @@ export async function createPoll(values: PollFormValues) {
     "/polls",
     normalizePollPayload(values),
   );
-  return response.data;
+  return response.data.data;
 }
 
 export async function getPollById(pollId: string) {
   const response = await apiClient.get<ApiResponse<ApiPoll>>(
     `/polls/${pollId}`,
   );
-  return response.data;
+  return response.data.data;
 }
 
 export async function getMyPolls(filters?: {
@@ -134,7 +134,7 @@ export async function getMyPolls(filters?: {
       pages: number;
     }>
   >(`/polls?${params.toString()}`);
-  return response.data;
+  return response.data.data;
 }
 
 export async function updatePoll(pollId: string, values: PollFormValues) {
@@ -142,21 +142,21 @@ export async function updatePoll(pollId: string, values: PollFormValues) {
     `/polls/${pollId}`,
     normalizePollPayload(values),
   );
-  return response.data;
+  return response.data.data;
 }
 
 export async function publishPollResults(pollId: string) {
   const response = await apiClient.post<ApiResponse<ApiPoll>>(
     `/polls/${pollId}/publish`,
   );
-  return response.data;
+  return response.data.data;
 }
 
 export async function publishPoll(pollId: string) {
   const response = await apiClient.post<ApiResponse<ApiPoll>>(
     `/polls/${pollId}/go-live`,
   );
-  return response.data;
+  return response.data.data;
 }
 
 export async function getPublicResults(pollId: string) {
@@ -173,7 +173,7 @@ export async function getPublicResults(pollId: string) {
   >(`/polls/${pollId}/results`, {
     skipAuth: true,
   });
-  return response.data;
+  return response.data.data;
 }
 
 export async function getDashboardOverview() {
@@ -201,21 +201,21 @@ export async function getDashboardOverview() {
     }>
   >("/polls/summary");
 
-  return response.data;
+  return response.data.data;
 }
 
 export async function getPollAnalytics(pollId: string) {
   const response = await apiClient.get<ApiResponse<any>>(
     `/polls/${pollId}/analytics`,
   );
-  return response.data;
+  return response.data.data;
 }
 
 export async function deletePoll(pollId: string) {
   const response = await apiClient.delete<ApiResponse<{ message: string }>>(
     `/polls/${pollId}`,
   );
-  return response.data;
+  return response.data.data;
 }
 
 export type PollAnswer = {

@@ -187,6 +187,9 @@ export default function MyPolls() {
                         {poll.title}
                       </h3>
                     </Link>
+                    <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
+                      {poll.description || "No description provided."}
+                    </p>
                     <div className="text-sm text-muted-foreground">
                       Created{" "}
                       {new Date(
