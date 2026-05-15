@@ -1,5 +1,6 @@
 import {
     getUserById,
+    getUserProfileSummary,
     updateUserProfile,
 } from "../services/user.service.js";
 
@@ -22,6 +23,30 @@ export async function getProfile(req, res) {
         return res.status(500).json({
             success: false,
             message: "Failed to fetch profile",
+            error: error.message,
+        });
+    }
+}
+
+export async function getProfileSummary(req, res) {
+    try {
+        const summary = await getUserProfileSummary(req.user._id);
+
+        if (!summary) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: summary,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to load profile summary",
             error: error.message,
         });
     }
