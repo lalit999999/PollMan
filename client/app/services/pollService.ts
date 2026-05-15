@@ -7,6 +7,7 @@ export type PollOptionFormValue = {
 export type PollQuestionFormValue = {
   text: string;
   isRequired: boolean;
+  allowOpinionText: boolean;
   options: PollOptionFormValue[];
 };
 
@@ -17,6 +18,8 @@ export type PollFormValues = {
   allowResultsPublish: boolean;
   expiresAt: string;
   questions: PollQuestionFormValue[];
+  passwordProtected?: boolean;
+  password?: string | null;
 };
 
 type ApiPollOption = {
@@ -29,6 +32,7 @@ export type ApiPollQuestion = {
   _id?: string;
   text: string;
   isRequired: boolean;
+  allowOpinionText?: boolean;
   voteCount?: number;
   options: ApiPollOption[];
 };
@@ -39,6 +43,8 @@ export type ApiPoll = {
   description: string;
   isAnonymous: boolean;
   allowResultsPublish: boolean;
+  allowOpinionText?: boolean;
+  passwordProtected?: boolean;
   resultsPublished?: boolean;
   totalResponses?: number;
   status?: string;
@@ -69,6 +75,7 @@ function normalizeQuestions(questions: PollQuestionFormValue[]) {
   return questions.map((question) => ({
     text: question.text.trim(),
     isRequired: question.isRequired,
+    allowOpinionText: question.allowOpinionText,
     options: question.options.map((option) => ({
       text: option.text.trim(),
     })),
@@ -81,6 +88,8 @@ export function normalizePollPayload(values: PollFormValues) {
     description: values.description.trim(),
     isAnonymous: values.isAnonymous,
     allowResultsPublish: values.allowResultsPublish,
+    passwordProtected: !!values.passwordProtected,
+    password: values.password ? String(values.password) : undefined,
     expiresAt: values.expiresAt
       ? new Date(values.expiresAt).toISOString()
       : null,
@@ -212,6 +221,7 @@ export async function deletePoll(pollId: string) {
 export type PollAnswer = {
   questionId: string;
   selectedOption: string;
+  opinion?: string;
 };
 
 export async function submitPollResponse(
@@ -222,5 +232,14 @@ export async function submitPollResponse(
     `/polls/${pollId}/respond`,
     { answers },
   );
+  return response.data;
+}
+export async function verifyPollPassword(pollId: string, password?: string) {
+  const response = await apiClient.post<ApiResponse<{ message: string }>>(
+    `/polls/${pollId}/verify-password`,
+    { password },
+    { skipAuth: true },
+  );
+
   return response.data;
 }

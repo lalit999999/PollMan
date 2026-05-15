@@ -7,6 +7,7 @@ import {
     handlePublishResults,
     handleSubmitResponse,
     handleGetAnalytics,
+    handleVerifyPollPassword,
 } from "../controllers/poll.controller.js";
 import {
     handleGetUserPolls,
@@ -48,6 +49,9 @@ router.get("/:id/results", optionalAuthMiddleware, handleGetPublicResults);
 
 // Submit response (public/optional auth based on poll settings)
 router.post("/:id/respond", optionalAuthMiddleware, handleSubmitResponse);
+
+// Verify poll password before allowing responses
+router.post("/:id/verify-password", optionalAuthMiddleware, handleVerifyPollPassword);
 
 // Get analytics (protected - only creator)
 router.get("/:id/analytics", authMiddleware, handleGetAnalytics);

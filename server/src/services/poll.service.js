@@ -1,4 +1,5 @@
 import { Poll, Question, Response, PollAccessLog } from "../models/index.js";
+import bcrypt from "bcryptjs";
 import {
     emitPollAnalyticsUpdate,
     emitPollResponseNew,
@@ -72,6 +73,8 @@ export async function createPoll(userId, pollData) {
         isAnonymous = false,
         expiresAt = null,
         allowResultsPublish = true,
+        passwordProtected = false,
+        password = null,
     } = pollData;
 
     // Create poll
@@ -82,7 +85,17 @@ export async function createPoll(userId, pollData) {
         isAnonymous,
         expiresAt,
         allowResultsPublish,
+        passwordProtected,
     });
+
+    // If password protection is enabled and a password provided, hash it
+    if (passwordProtected && password) {
+        try {
+            poll.passwordHash = bcrypt.hashSync(String(password), 10);
+        } catch (err) {
+            console.warn("Failed to hash poll password:", err?.message || err);
+        }
+    }
 
     await poll.save();
 
@@ -98,6 +111,7 @@ export async function createPoll(userId, pollData) {
                     count: 0,
                 })),
                 isRequired: q.isRequired || false,
+                allowOpinionText: q.allowOpinionText || false,
                 order: index,
             })),
         );
@@ -165,6 +179,24 @@ export async function updatePoll(pollId, userId, updateData) {
     if (typeof updateData.allowResultsPublish === "boolean") {
         poll.allowResultsPublish = updateData.allowResultsPublish;
     }
+    // Handle password protection updates
+    if (typeof updateData.passwordProtected === "boolean") {
+        poll.passwordProtected = updateData.passwordProtected;
+
+        if (poll.passwordProtected) {
+            if (updateData.password) {
+                try {
+                    poll.passwordHash = bcrypt.hashSync(String(updateData.password), 10);
+                } catch (err) {
+                    console.warn("Failed to hash updated poll password:", err?.message || err);
+                }
+            }
+            // If enabling protection but no password provided, keep existing hash
+        } else {
+            // If disabling protection, clear stored hash
+            poll.passwordHash = null;
+        }
+    }
     if (updateData.expiresAt !== undefined) {
         poll.expiresAt = updateData.expiresAt;
     }
@@ -185,6 +217,7 @@ export async function updatePoll(pollId, userId, updateData) {
                 existingQuestion.type = "single-choice";
                 existingQuestion.options = normalizedOptions;
                 existingQuestion.isRequired = q.isRequired || false;
+                existingQuestion.allowOpinionText = q.allowOpinionText || false;
                 existingQuestion.order = index;
                 if (typeof existingQuestion.voteCount !== "number") {
                     existingQuestion.voteCount = 0;
@@ -201,6 +234,7 @@ export async function updatePoll(pollId, userId, updateData) {
                         count: opt.count,
                     })),
                     isRequired: q.isRequired || false,
+                    allowOpinionText: q.allowOpinionText || false,
                     voteCount: 0,
                     order: index,
                 });
@@ -221,6 +255,23 @@ export async function updatePoll(pollId, userId, updateData) {
 
     await poll.save();
     return poll.populate("questions");
+}
+
+export async function verifyPollPassword(pollId, password) {
+    const poll = await Poll.findById(pollId).select('+passwordHash');
+
+    if (!poll) throw new Error('Poll not found');
+
+    if (!poll.passwordProtected) return true;
+
+    if (!password) return false;
+
+    try {
+        return bcrypt.compareSync(String(password), poll.passwordHash || "");
+    } catch (err) {
+        console.warn('Password verification failed:', err?.message || err);
+        return false;
+    }
 }
 
 export async function publishPollResults(pollId, userId) {
@@ -346,10 +397,11 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
     // Create response
     const response = new Response({
         pollId,
-        userId: poll.isAnonymous ? null : userId,
+        userId: userId || null,  // Always capture userId if logged in, regardless of poll anonymous setting
         answers: answers.map((a) => ({
             questionId: a.questionId,
             selectedOption: a.selectedOption,
+            opinion: a.opinion?.trim() || "",
         })),
         isAnonymous: poll.isAnonymous,
         ipAddress,

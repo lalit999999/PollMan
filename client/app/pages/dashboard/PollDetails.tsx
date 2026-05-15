@@ -96,6 +96,7 @@ type PollAnalytics = {
     answers?: Array<{
       questionId: string;
       selectedOption: string;
+      opinion?: string;
     }>;
   }>;
   recentResponses?: Array<{
@@ -112,6 +113,7 @@ type PollAnalytics = {
     answers?: Array<{
       questionId: string;
       selectedOption: string;
+      opinion?: string;
     }>;
   }>;
 };
@@ -414,6 +416,7 @@ export default function PollDetails() {
                         questionText:
                           questionLookup.get(answer.questionId) || "Question",
                         selectedOption: answer.selectedOption,
+                        opinion: answer.opinion,
                       }),
                     );
 
@@ -484,19 +487,29 @@ export default function PollDetails() {
                             answerRows.map((answer, answerIndex) => (
                               <div
                                 key={`${response.responseId || index}-${answerIndex}`}
-                                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background/70 px-3 py-2 text-sm"
+                                className="space-y-2"
                               >
-                                <div className="min-w-0">
-                                  <p className="font-medium truncate">
-                                    {answer.questionText}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Selected response
-                                  </p>
+                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background/70 px-3 py-2 text-sm">
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate">
+                                      {answer.questionText}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Selected response
+                                    </p>
+                                  </div>
+                                  <Badge
+                                    variant="secondary"
+                                    className="shrink-0"
+                                  >
+                                    {answer.selectedOption}
+                                  </Badge>
                                 </div>
-                                <Badge variant="secondary" className="shrink-0">
-                                  {answer.selectedOption}
-                                </Badge>
+                                {answer.opinion ? (
+                                  <p className="px-3 text-xs whitespace-pre-wrap text-muted-foreground">
+                                    {answer.opinion}
+                                  </p>
+                                ) : null}
                               </div>
                             ))
                           ) : (

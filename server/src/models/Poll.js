@@ -48,6 +48,20 @@ const pollSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        allowOpinionText: {
+            type: Boolean,
+            default: false,
+        },
+        // Password protection
+        passwordProtected: {
+            type: Boolean,
+            default: false,
+        },
+        passwordHash: {
+            type: String,
+            select: false,
+            default: null,
+        },
         totalResponses: {
             type: Number,
             default: 0,

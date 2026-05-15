@@ -60,6 +60,7 @@ type PollFormBuilderProps = {
 const createQuestion = () => ({
   text: "",
   isRequired: true,
+  allowOpinionText: false,
   options: [{ text: "" }, { text: "" }],
 });
 
@@ -214,6 +215,24 @@ function QuestionEditor({
               </div>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <Controller
+              control={control}
+              name={`questions.${index}.allowOpinionText` as const}
+              render={({ field }) => (
+                <Switch
+                  checked={!!field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <div>
+              <div className="text-sm font-medium">Allow opinion text</div>
+              <div className="text-xs text-muted-foreground">
+                Show a text area for respondents on this question.
+              </div>
+            </div>
+          </div>
           <div className="ml-auto text-xs uppercase tracking-[0.24em] text-muted-foreground">
             {fields.length} options
           </div>
@@ -296,11 +315,14 @@ export default function PollFormBuilder({
       description: initialValues.description || "",
       isAnonymous: initialValues.isAnonymous || false,
       allowResultsPublish: initialValues.allowResultsPublish ?? true,
+      passwordProtected: initialValues.passwordProtected ?? false,
+      password: initialValues.password ?? null,
       expiresAt: toDateTimeLocalValue(initialValues.expiresAt),
       questions: initialValues.questions?.length
         ? initialValues.questions.map((question) => ({
             text: question.text || "",
             isRequired: question.isRequired ?? true,
+            allowOpinionText: question.allowOpinionText ?? false,
             options: question.options?.length
               ? question.options.map((option) => ({ text: option.text || "" }))
               : [{ text: "" }, { text: "" }],
@@ -340,6 +362,7 @@ export default function PollFormBuilder({
   const questionCountHint = `${watchedQuestions?.length || 0} question${(watchedQuestions?.length || 0) === 1 ? "" : "s"} ready`;
   const isAnonymous = watch("isAnonymous");
   const allowResultsPublish = watch("allowResultsPublish");
+  const passwordProtected = watch("passwordProtected");
 
   const runAction = async (action: "save" | "publish") => {
     const values = getValues();
@@ -604,6 +627,44 @@ export default function PollFormBuilder({
                   <CalendarDays className="h-4 w-4 text-primary" />
                   Expiry date <span className="text-red-500">*</span>
                 </Label>
+
+                <div className="flex items-start justify-between gap-4 rounded-2xl border border-border/60 bg-muted/20 p-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="passwordProtected" className="text-sm">
+                      Password protect poll
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Require a password for respondents to access this poll.
+                    </p>
+                  </div>
+                  <Controller
+                    control={control}
+                    name="passwordProtected"
+                    render={({ field }) => (
+                      <Switch
+                        checked={!!field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                {passwordProtected ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Response password</Label>
+                    <Input
+                      id="password"
+                      placeholder="Enter a password respondents must use"
+                      type="text"
+                      className="bg-background"
+                      {...register("password")}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Keep this secret — respondents will need this password to
+                      answer the poll.
+                    </p>
+                  </div>
+                ) : null}
                 <Input
                   id="expiresAt"
                   type="datetime-local"

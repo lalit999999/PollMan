@@ -15,11 +15,14 @@ const emptyPoll: PollFormValues = {
   description: "",
   isAnonymous: false,
   allowResultsPublish: true,
+  passwordProtected: false,
+  password: null,
   expiresAt: "",
   questions: [
     {
       text: "",
       isRequired: true,
+      allowOpinionText: false,
       options: [{ text: "" }, { text: "" }],
     },
   ],
@@ -31,6 +34,8 @@ function pollToFormValues(poll: ApiPoll): PollFormValues {
     description: poll.description || "",
     isAnonymous: poll.isAnonymous || false,
     allowResultsPublish: poll.allowResultsPublish ?? true,
+    passwordProtected: (poll as any).passwordProtected ?? false,
+    password: null,
     expiresAt: poll.expiresAt
       ? new Date(poll.expiresAt).toISOString().slice(0, 16)
       : "",
@@ -38,6 +43,7 @@ function pollToFormValues(poll: ApiPoll): PollFormValues {
       ? poll.questions.map((question) => ({
           text: question.text,
           isRequired: question.isRequired,
+          allowOpinionText: question.allowOpinionText ?? false,
           options: question.options?.length
             ? question.options.map((option) => ({ text: option.text }))
             : [{ text: "" }, { text: "" }],

@@ -23,6 +23,10 @@ const responseSchema = new mongoose.Schema(
                     type: String,
                     required: true,
                 },
+                opinion: {
+                    type: String,
+                    default: "",
+                },
             },
         ],
         isAnonymous: {
