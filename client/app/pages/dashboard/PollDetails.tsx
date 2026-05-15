@@ -61,6 +61,9 @@ import { connectSocket, disconnectSocket } from "../../lib/socketClient";
 type PollAnalytics = {
   pollId: string;
   title: string;
+  isResponseLimited?: boolean;
+  responseLimit?: number | null;
+  responseLimitReached?: boolean;
   totalResponses: number;
   completionRate: number;
   completionPercentage: number;
@@ -335,6 +338,13 @@ export default function PollDetails() {
   const analyticsData: PollAnalytics = analytics ?? {
     pollId: poll._id,
     title: poll.title,
+    isResponseLimited: poll.isResponseLimited,
+    responseLimit: poll.responseLimit ?? null,
+    responseLimitReached: !!(
+      poll.isResponseLimited &&
+      poll.responseLimit &&
+      (poll.totalResponses || 0) >= poll.responseLimit
+    ),
     totalResponses: poll.totalResponses || 0,
     completionRate: 0,
     completionPercentage: 0,
@@ -720,6 +730,30 @@ export default function PollDetails() {
                 <span className="text-muted-foreground">Published</span>
                 <span>{poll.isPublished ? "Yes" : "No"}</span>
               </div>
+              {analyticsData.isResponseLimited && (
+                <>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">
+                      Response Limit
+                    </span>
+                    <span>{analyticsData.responseLimit ?? "—"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Limit Status</span>
+                    <span
+                      className={
+                        analyticsData.responseLimitReached
+                          ? "text-red-500 font-medium"
+                          : "text-foreground"
+                      }
+                    >
+                      {analyticsData.responseLimitReached
+                        ? "Response limit has been reached"
+                        : `${Math.max((analyticsData.responseLimit || 0) - analyticsData.totalResponses, 0)} remaining`}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Results Published</span>
                 <span>{poll.resultsPublished ? "Yes" : "No"}</span>
@@ -839,6 +873,23 @@ export default function PollDetails() {
                     {analyticsData.totalResponses}
                   </p>
                 </div>
+                {analyticsData.isResponseLimited && (
+                  <div className="rounded-xl border border-border bg-muted/30 p-3 col-span-2">
+                    <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                      Response Limit
+                    </p>
+                    <p className="mt-1 text-xl font-bold">
+                      {analyticsData.responseLimit ?? "—"}
+                    </p>
+                    <p
+                      className={`mt-1 text-xs ${analyticsData.responseLimitReached ? "text-red-500" : "text-muted-foreground"}`}
+                    >
+                      {analyticsData.responseLimitReached
+                        ? "Response limit has been reached"
+                        : `${Math.max((analyticsData.responseLimit || 0) - analyticsData.totalResponses, 0)} responses remaining`}
+                    </p>
+                  </div>
+                )}
                 <div className="rounded-xl border border-border bg-muted/30 p-3">
                   <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                     Completion

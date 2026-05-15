@@ -585,6 +585,10 @@ export async function getPollAnalytics(pollId, userId) {
     return {
         pollId,
         title: poll.title,
+        isResponseLimited: poll.isResponseLimited || false,
+        responseLimit: poll.responseLimit ?? null,
+        responseLimitReached:
+            !!(poll.isResponseLimited && poll.responseLimit && responses.length >= poll.responseLimit),
         totalResponses: responses.length,
         completionRate,
         completionPercentage: averageCompletion,

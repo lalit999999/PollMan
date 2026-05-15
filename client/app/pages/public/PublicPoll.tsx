@@ -454,7 +454,9 @@ export default function PublicPoll() {
               <User className="w-4 h-4 text-primary" />
               Creator
             </h3>
-            <p className="text-sm font-semibold text-foreground">{creatorLabel}</p>
+            <p className="text-sm font-semibold text-foreground">
+              {creatorLabel}
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -634,7 +636,9 @@ export default function PublicPoll() {
             <User className="w-4 h-4 text-primary" />
             Creator
           </h3>
-          <p className="text-sm font-semibold text-foreground">{creatorLabel}</p>
+          <p className="text-sm font-semibold text-foreground">
+            {creatorLabel}
+          </p>
         </div>
 
         <div className="space-y-4">
