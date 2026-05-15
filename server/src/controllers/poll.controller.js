@@ -13,7 +13,7 @@ import { Poll } from "../models/index.js";
 
 export async function handleCreatePoll(req, res) {
     try {
-        const { title, description, questions, isAnonymous, expiresAt, allowResultsPublish, passwordProtected, password } =
+        const { title, description, questions, isAnonymous, expiresAt, allowResultsPublish, passwordProtected, password, isResponseLimited, responseLimit } =
             req.body;
 
         if (!title || !title.trim()) {
@@ -46,6 +46,8 @@ export async function handleCreatePoll(req, res) {
             allowResultsPublish,
             passwordProtected,
             password,
+            isResponseLimited,
+            responseLimit,
         });
 
         return res.status(201).json({
@@ -125,6 +127,8 @@ export async function handleUpdatePoll(req, res) {
             allowResultsPublish,
             passwordProtected,
             password,
+            isResponseLimited,
+            responseLimit,
         } = req.body;
 
         const poll = await updatePoll(id, req.user._id, {
@@ -136,6 +140,8 @@ export async function handleUpdatePoll(req, res) {
             allowResultsPublish,
             passwordProtected,
             password,
+            isResponseLimited,
+            responseLimit,
         });
 
         return res.status(200).json({

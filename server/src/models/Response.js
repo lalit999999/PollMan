@@ -21,7 +21,7 @@ const responseSchema = new mongoose.Schema(
                 },
                 selectedOption: {
                     type: String,
-                    required: true,
+                    default: null,
                 },
                 opinion: {
                     type: String,

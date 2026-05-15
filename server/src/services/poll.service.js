@@ -75,6 +75,8 @@ export async function createPoll(userId, pollData) {
         allowResultsPublish = true,
         passwordProtected = false,
         password = null,
+        isResponseLimited = false,
+        responseLimit = null,
     } = pollData;
 
     // Create poll
@@ -86,12 +88,14 @@ export async function createPoll(userId, pollData) {
         expiresAt,
         allowResultsPublish,
         passwordProtected,
+        isResponseLimited,
+        responseLimit: isResponseLimited ? responseLimit : null,
     });
 
     // If password protection is enabled and a password provided, hash it
     if (passwordProtected && password) {
         try {
-            poll.passwordHash = bcrypt.hashSync(String(password), 10);
+            poll.passwordHash = bcrypt.hashSync(String(password).toUpperCase(), 10);
         } catch (err) {
             console.warn("Failed to hash poll password:", err?.message || err);
         }
@@ -137,7 +141,7 @@ export async function createPoll(userId, pollData) {
 }
 
 export async function getPollById(pollId, userId = null) {
-    const poll = await Poll.findById(pollId).populate("questions");
+    const poll = await Poll.findById(pollId).populate("questions").populate("createdBy", "name email");
 
     if (!poll) {
         throw new Error("Poll not found");
@@ -186,7 +190,7 @@ export async function updatePoll(pollId, userId, updateData) {
         if (poll.passwordProtected) {
             if (updateData.password) {
                 try {
-                    poll.passwordHash = bcrypt.hashSync(String(updateData.password), 10);
+                    poll.passwordHash = bcrypt.hashSync(String(updateData.password).toUpperCase(), 10);
                 } catch (err) {
                     console.warn("Failed to hash updated poll password:", err?.message || err);
                 }
@@ -196,6 +200,11 @@ export async function updatePoll(pollId, userId, updateData) {
             // If disabling protection, clear stored hash
             poll.passwordHash = null;
         }
+    }
+    // Handle response limit updates
+    if (typeof updateData.isResponseLimited === "boolean") {
+        poll.isResponseLimited = updateData.isResponseLimited;
+        poll.responseLimit = updateData.isResponseLimited ? Number(updateData.responseLimit) || null : null;
     }
     if (updateData.expiresAt !== undefined) {
         poll.expiresAt = updateData.expiresAt;
@@ -267,7 +276,7 @@ export async function verifyPollPassword(pollId, password) {
     if (!password) return false;
 
     try {
-        return bcrypt.compareSync(String(password), poll.passwordHash || "");
+        return bcrypt.compareSync(String(password).toUpperCase(), poll.passwordHash || "");
     } catch (err) {
         console.warn('Password verification failed:', err?.message || err);
         return false;
@@ -353,6 +362,11 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
         throw new Error("Poll has expired");
     }
 
+    // Check response limit
+    if (poll.isResponseLimited && poll.responseLimit && poll.totalResponses >= poll.responseLimit) {
+        throw new Error("Response limit has been reached for this poll");
+    }
+
     // Check if user already responded
     if (userId) {
         // Authenticated users: check by userId
@@ -413,14 +427,24 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
 
     // Update question option counts
     for (const answer of answers) {
-        await Question.findByIdAndUpdate(answer.questionId, {
-            $inc: {
-                voteCount: 1,
-                "options.$[opt].count": 1,
-            },
-        }, {
-            arrayFilters: [{ "opt.text": answer.selectedOption }],
-        });
+        if (answer.selectedOption) {
+            // For questions with options, update both voteCount and option count
+            await Question.findByIdAndUpdate(answer.questionId, {
+                $inc: {
+                    voteCount: 1,
+                    "options.$[opt].count": 1,
+                },
+            }, {
+                arrayFilters: [{ "opt.text": answer.selectedOption }],
+            });
+        } else {
+            // For opinion-only questions with no selected option, just increment voteCount
+            await Question.findByIdAndUpdate(answer.questionId, {
+                $inc: {
+                    voteCount: 1,
+                },
+            });
+        }
     }
 
     // Update poll total responses

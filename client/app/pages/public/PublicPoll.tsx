@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import rehypeHighlight from "rehype-highlight";
+import rehypeRaw from "rehype-raw";
 import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
+import "highlight.js/styles/atom-one-dark.css";
 import {
   CheckCircle2,
   ArrowRight,
@@ -37,6 +43,7 @@ export default function PublicPoll() {
   const [isCreator, setIsCreator] = useState(false);
   const [alreadyResponded, setAlreadyResponded] = useState(false);
   const [pollExpired, setPollExpired] = useState(false);
+  const [responseLimitReached, setResponseLimitReached] = useState(false);
   const [pollNotFound, setPollNotFound] = useState(false);
   const [pollNotPublished, setPollNotPublished] = useState(false);
   const [passwordVerified, setPasswordVerified] = useState(false);
@@ -49,10 +56,11 @@ export default function PublicPoll() {
     : null;
 
   const creatorLabel =
-    (poll as any)?.createdByName ||
-    (poll as any)?.creatorName ||
-    (poll as any)?.createdBy?.name ||
-    "Poll creator";
+    typeof poll?.createdBy === "object"
+      ? (poll?.createdBy as any)?.name
+      : (poll as any)?.createdByName ||
+        (poll as any)?.creatorName ||
+        "Poll creator";
 
   useEffect(() => {
     const loadPoll = async () => {
@@ -87,6 +95,16 @@ export default function PublicPoll() {
             setPollExpired(true);
           }
         }
+
+        // Check if response limit is reached
+        if (
+          pollData.isResponseLimited &&
+          pollData.responseLimit &&
+          (pollData.totalResponses ?? 0) >= pollData.responseLimit
+        ) {
+          setResponseLimitReached(true);
+        }
+
         // If poll is password protected, require verification before answering
         if (pollData.passwordProtected) {
           setPasswordVerified(false);
@@ -134,19 +152,27 @@ export default function PublicPoll() {
   }, [id, poll?.isPublished]);
 
   const handleNext = async () => {
-    if (!selected) {
-      toast.error("Please select an option");
-      return;
-    }
-
     const currentQuestion = poll?.questions[step];
     if (!currentQuestion) return;
+
+    // For opinion-only questions, opinion is required; for regular questions, selection is required
+    if (currentQuestion.allowOpinionText) {
+      if (!opinion.trim()) {
+        toast.error("Please share your thoughts");
+        return;
+      }
+    } else {
+      if (!selected) {
+        toast.error("Please select an option");
+        return;
+      }
+    }
 
     const newAnswers: PollAnswer[] = [
       ...answers,
       {
         questionId: currentQuestion._id || "",
-        selectedOption: selected,
+        selectedOption: selected || null,
         opinion: opinion.trim(),
       },
     ];
@@ -164,7 +190,18 @@ export default function PublicPoll() {
   };
 
   const submitPoll = async (finalAnswers: PollAnswer[]) => {
-    if (!id) return;
+    if (!id || !poll) return;
+
+    // Check if response limit is reached before submitting
+    if (
+      poll.isResponseLimited &&
+      poll.responseLimit &&
+      (poll.totalResponses ?? 0) >= poll.responseLimit
+    ) {
+      toast.error("Response limit has been reached for this poll");
+      setResponseLimitReached(true);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -184,6 +221,8 @@ export default function PublicPoll() {
 
       if (errorMsg.includes("already responded")) {
         setAlreadyResponded(true);
+      } else if (errorMsg.includes("Response limit")) {
+        setResponseLimitReached(true);
       }
     } finally {
       setIsSubmitting(false);
@@ -349,6 +388,32 @@ export default function PublicPoll() {
     );
   }
 
+  if (responseLimitReached) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="w-10 h-10 text-red-500" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Limit Reached</h1>
+          <p className="text-muted-foreground text-lg">
+            This poll has reached its maximum number of responses and is no
+            longer accepting new responses.
+          </p>
+          <div className="pt-8 space-y-4">
+            <Button className="w-full" asChild>
+              <Link to="/">Return Home</Link>
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (alreadyResponded) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -384,15 +449,12 @@ export default function PublicPoll() {
     return (
       <div className="min-h-screen bg-background flex flex-col lg:flex-row">
         <aside className="w-full lg:w-80 border-t lg:border-t-0 lg:border-r border-border bg-muted/30 p-6 sm:p-8 space-y-8 lg:sticky lg:top-0 lg:self-start lg:min-h-screen">
-          <div className="space-y-4">
+          <div className="space-y-2">
             <h3 className="font-semibold flex items-center gap-2">
               <User className="w-4 h-4 text-primary" />
               Creator
             </h3>
-            <div className="text-sm space-y-2">
-              <p className="text-muted-foreground">Poll created by</p>
-              <p className="font-semibold text-foreground">{creatorLabel}</p>
-            </div>
+            <p className="text-sm font-semibold text-foreground">{creatorLabel}</p>
           </div>
 
           <div className="space-y-4">
@@ -406,6 +468,22 @@ export default function PublicPoll() {
                 {liveResponseCount}{" "}
                 {liveResponseCount === 1 ? "response" : "responses"}
               </div>
+              {poll.isResponseLimited && poll.responseLimit && (
+                <div className="text-xs">
+                  <p className="text-muted-foreground">
+                    Limit: {poll.responseLimit} responses
+                  </p>
+                  {liveResponseCount >= poll.responseLimit ? (
+                    <p className="text-red-500 font-medium">
+                      ⚠ Response limit reached
+                    </p>
+                  ) : (
+                    <p className="text-amber-600 font-medium">
+                      {poll.responseLimit - liveResponseCount} slots remaining
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -551,15 +629,12 @@ export default function PublicPoll() {
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       <aside className="order-2 lg:order-1 w-full lg:w-80 border-t lg:border-t-0 lg:border-r border-border bg-muted/30 p-6 sm:p-8 lg:sticky lg:top-0 lg:self-start lg:min-h-screen space-y-8">
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h3 className="font-semibold flex items-center gap-2">
             <User className="w-4 h-4 text-primary" />
             Creator
           </h3>
-          <div className="text-sm space-y-2">
-            <p className="text-muted-foreground">Poll created by</p>
-            <p className="font-semibold text-foreground">{creatorLabel}</p>
-          </div>
+          <p className="text-sm font-semibold text-foreground">{creatorLabel}</p>
         </div>
 
         <div className="space-y-4">
@@ -675,41 +750,114 @@ export default function PublicPoll() {
                   {currentQuestion?.text}
                 </h1>
 
-                <div className="space-y-3">
-                  {currentQuestion?.options?.map((opt) => (
-                    <button
-                      key={opt._id || opt.text}
-                      onClick={() => setSelected(opt.text)}
-                      className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 text-lg ${selected === opt.text ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/50 hover:bg-muted/50 glass"}`}
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <span>{opt.text}</span>
-                        <div
-                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === opt.text ? "border-primary" : "border-muted-foreground/30"}`}
-                        >
-                          {selected === opt.text && (
-                            <div className="w-3 h-3 rounded-full bg-primary" />
-                          )}
+                {!currentQuestion?.allowOpinionText && (
+                  <div className="space-y-3">
+                    {currentQuestion?.options?.map((opt) => (
+                      <button
+                        key={opt._id || opt.text}
+                        onClick={() => setSelected(opt.text)}
+                        className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 text-lg ${selected === opt.text ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/50 hover:bg-muted/50 glass"}`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <span>{opt.text}</span>
+                          <div
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === opt.text ? "border-primary" : "border-muted-foreground/30"}`}
+                          >
+                            {selected === opt.text && (
+                              <div className="w-3 h-3 rounded-full bg-primary" />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {currentQuestion?.allowOpinionText ? (
-                  <div className="space-y-3 rounded-2xl border border-border bg-muted/20 p-4">
+                  <div className="space-y-4 rounded-2xl border border-border bg-muted/20 p-4">
                     <div>
-                      <h3 className="font-semibold">Add your opinion</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Share a short explanation or comment with your answer.
+                      <h3 className="font-semibold">Share your thoughts</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Full markdown support: **bold**, *italic*, `code`, ###
+                        headings, - lists, [links](url), | tables |, and more
                       </p>
                     </div>
                     <Textarea
                       value={opinion}
                       onChange={(e) => setOpinion(e.target.value)}
-                      placeholder="Write your opinion here..."
-                      className="min-h-28 bg-background"
+                      placeholder="Write your response here... (Full markdown supported)"
+                      className="min-h-40 bg-background font-mono text-sm"
                     />
+                    {opinion.trim() && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Preview:
+                        </p>
+                        <div className="rounded-lg border border-border/50 bg-background p-4 overflow-auto max-h-64">
+                          <div
+                            className="prose prose-sm max-w-none dark:prose-invert 
+                            [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-2
+                            [&_h2]:text-lg [&_h2]:font-bold [&_h2]:mb-2
+                            [&_h3]:text-base [&_h3]:font-bold [&_h3]:mb-2
+                            [&_h4]:text-sm [&_h4]:font-bold [&_h4]:mb-1
+                            [&_p]:my-1 [&_p]:leading-relaxed
+                            [&_ul]:ml-4 [&_ul]:my-1 [&_ul]:list-disc
+                            [&_ol]:ml-4 [&_ol]:my-1 [&_ol]:list-decimal
+                            [&_li]:my-0.5
+                            [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono
+                            [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto [&_pre]:my-2
+                            [&_pre_code]:text-xs
+                            [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:my-2
+                            [&_a]:text-primary [&_a]:underline [&_a]:hover:opacity-80
+                            [&_strong]:font-bold
+                            [&_em]:italic
+                            [&_del]:line-through [&_del]:opacity-60
+                            [&_table]:border-collapse [&_table]:w-full [&_table]:my-2
+                            [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_th]:bg-muted
+                            [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1
+                            [&_hr]:my-3 [&_hr]:border-t [&_hr]:border-border
+                            [&_img]:max-w-full [&_img]:rounded
+                            text-sm"
+                          >
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkBreaks]}
+                              rehypePlugins={[
+                                rehypeRaw,
+                                [rehypeHighlight, { detect: true }],
+                              ]}
+                              components={{
+                                code: ({
+                                  node,
+                                  inline,
+                                  className,
+                                  children,
+                                  ...props
+                                }: any) =>
+                                  inline ? (
+                                    <code
+                                      className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono"
+                                      {...props}
+                                    >
+                                      {children}
+                                    </code>
+                                  ) : (
+                                    <pre className="bg-muted p-3 rounded overflow-x-auto my-2">
+                                      <code
+                                        className={className || "text-xs"}
+                                        {...props}
+                                      >
+                                        {children}
+                                      </code>
+                                    </pre>
+                                  ),
+                              }}
+                            >
+                              {opinion}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : null}
 
@@ -718,7 +866,12 @@ export default function PublicPoll() {
                     size="lg"
                     className="px-8 text-base gap-2"
                     onClick={handleNext}
-                    disabled={!selected || isSubmitting}
+                    disabled={
+                      isSubmitting ||
+                      (currentQuestion?.allowOpinionText
+                        ? !opinion.trim()
+                        : !selected)
+                    }
                   >
                     {isSubmitting
                       ? "Submitting..."

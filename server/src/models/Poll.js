@@ -52,6 +52,16 @@ const pollSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        // Response limit
+        isResponseLimited: {
+            type: Boolean,
+            default: false,
+        },
+        responseLimit: {
+            type: Number,
+            default: null,
+            min: 1,
+        },
         // Password protection
         passwordProtected: {
             type: Boolean,

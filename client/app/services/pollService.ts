@@ -20,6 +20,8 @@ export type PollFormValues = {
   questions: PollQuestionFormValue[];
   passwordProtected?: boolean;
   password?: string | null;
+  isResponseLimited?: boolean;
+  responseLimit?: number | null;
 };
 
 type ApiPollOption = {
@@ -45,6 +47,8 @@ export type ApiPoll = {
   allowResultsPublish: boolean;
   allowOpinionText?: boolean;
   passwordProtected?: boolean;
+  isResponseLimited?: boolean;
+  responseLimit?: number | null;
   resultsPublished?: boolean;
   totalResponses?: number;
   status?: string;
@@ -52,7 +56,7 @@ export type ApiPoll = {
   expiresAt: string | null;
   createdAt?: string;
   questions: ApiPollQuestion[];
-  createdBy?: string;
+  createdBy?: string | { _id: string; name: string; email?: string };
 };
 
 export type PublicResultsQuestion = {
@@ -76,9 +80,11 @@ function normalizeQuestions(questions: PollQuestionFormValue[]) {
     text: question.text.trim(),
     isRequired: question.isRequired,
     allowOpinionText: question.allowOpinionText,
-    options: question.options.map((option) => ({
-      text: option.text.trim(),
-    })),
+    options: question.allowOpinionText
+      ? [{ text: "Opinion" }, { text: "Opinion" }] // Placeholder options for opinion-only questions
+      : question.options.map((option) => ({
+          text: option.text.trim(),
+        })),
   }));
 }
 
@@ -89,7 +95,13 @@ export function normalizePollPayload(values: PollFormValues) {
     isAnonymous: values.isAnonymous,
     allowResultsPublish: values.allowResultsPublish,
     passwordProtected: !!values.passwordProtected,
-    password: values.password ? String(values.password) : undefined,
+    password: values.password
+      ? String(values.password).toUpperCase()
+      : undefined,
+    isResponseLimited: !!values.isResponseLimited,
+    responseLimit: values.isResponseLimited
+      ? Number(values.responseLimit) || null
+      : null,
     expiresAt: values.expiresAt
       ? new Date(values.expiresAt).toISOString()
       : null,
@@ -98,18 +110,18 @@ export function normalizePollPayload(values: PollFormValues) {
 }
 
 export async function createPoll(values: PollFormValues) {
-  const response = await apiClient.post<ApiResponse<ApiPoll>>(
+  const { data: poll } = await apiClient.post<ApiResponse<ApiPoll>>(
     "/polls",
     normalizePollPayload(values),
   );
-  return response.data.data;
+  return poll;
 }
 
 export async function getPollById(pollId: string) {
-  const response = await apiClient.get<ApiResponse<ApiPoll>>(
+  const { data: poll } = await apiClient.get<ApiResponse<ApiPoll>>(
     `/polls/${pollId}`,
   );
-  return response.data.data;
+  return poll;
 }
 
 export async function getMyPolls(filters?: {
@@ -126,7 +138,7 @@ export async function getMyPolls(filters?: {
     });
   }
 
-  const response = await apiClient.get<
+  const { data: pollsData } = await apiClient.get<
     ApiResponse<{
       polls: ApiPoll[];
       total: number;
@@ -134,33 +146,33 @@ export async function getMyPolls(filters?: {
       pages: number;
     }>
   >(`/polls?${params.toString()}`);
-  return response.data.data;
+  return pollsData;
 }
 
 export async function updatePoll(pollId: string, values: PollFormValues) {
-  const response = await apiClient.patch<ApiResponse<ApiPoll>>(
+  const { data: poll } = await apiClient.patch<ApiResponse<ApiPoll>>(
     `/polls/${pollId}`,
     normalizePollPayload(values),
   );
-  return response.data.data;
+  return poll;
 }
 
 export async function publishPollResults(pollId: string) {
-  const response = await apiClient.post<ApiResponse<ApiPoll>>(
+  const { data: poll } = await apiClient.post<ApiResponse<ApiPoll>>(
     `/polls/${pollId}/publish`,
   );
-  return response.data.data;
+  return poll;
 }
 
 export async function publishPoll(pollId: string) {
-  const response = await apiClient.post<ApiResponse<ApiPoll>>(
+  const { data: poll } = await apiClient.post<ApiResponse<ApiPoll>>(
     `/polls/${pollId}/go-live`,
   );
-  return response.data.data;
+  return poll;
 }
 
 export async function getPublicResults(pollId: string) {
-  const response = await apiClient.get<
+  const { data: results } = await apiClient.get<
     ApiResponse<{
       pollId: string;
       title: string;
@@ -173,11 +185,11 @@ export async function getPublicResults(pollId: string) {
   >(`/polls/${pollId}/results`, {
     skipAuth: true,
   });
-  return response.data.data;
+  return results;
 }
 
 export async function getDashboardOverview() {
-  const response = await apiClient.get<
+  const { data: overview } = await apiClient.get<
     ApiResponse<{
       stats: {
         totalPolls: number;
@@ -201,26 +213,26 @@ export async function getDashboardOverview() {
     }>
   >("/polls/summary");
 
-  return response.data.data;
+  return overview;
 }
 
 export async function getPollAnalytics(pollId: string) {
-  const response = await apiClient.get<ApiResponse<any>>(
+  const { data: analytics } = await apiClient.get<ApiResponse<any>>(
     `/polls/${pollId}/analytics`,
   );
-  return response.data.data;
+  return analytics;
 }
 
 export async function deletePoll(pollId: string) {
-  const response = await apiClient.delete<ApiResponse<{ message: string }>>(
-    `/polls/${pollId}`,
-  );
-  return response.data.data;
+  const { data: result } = await apiClient.delete<
+    ApiResponse<{ message: string }>
+  >(`/polls/${pollId}`);
+  return result;
 }
 
 export type PollAnswer = {
   questionId: string;
-  selectedOption: string;
+  selectedOption: string | null;
   opinion?: string;
 };
 
@@ -237,7 +249,7 @@ export async function submitPollResponse(
 export async function verifyPollPassword(pollId: string, password?: string) {
   const response = await apiClient.post<ApiResponse<{ message: string }>>(
     `/polls/${pollId}/verify-password`,
-    { password },
+    { password: password ? password.toUpperCase() : password },
     { skipAuth: true },
   );
 
