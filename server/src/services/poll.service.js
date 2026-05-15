@@ -426,8 +426,10 @@ export async function getPollAnalytics(pollId, userId) {
         throw new Error("Not authorized to view analytics");
     }
 
-    // Get all responses
-    const responses = await Response.find({ pollId }).sort({ createdAt: 1 });
+    // Get all responses (populate user info when available)
+    const responses = await Response.find({ pollId })
+        .sort({ createdAt: 1 })
+        .populate("userId", "name email");
 
     // Build analytics
     const questionAnalytics = poll.questions.map((question) => {
@@ -501,9 +503,17 @@ export async function getPollAnalytics(pollId, userId) {
             .slice(-10)
             .reverse()
             .map((r) => ({
+                responseId: r._id,
                 respondedAt: r.createdAt,
                 completionPercentage: r.completionPercentage,
                 isAnonymous: r.isAnonymous,
+                responder: r.userId
+                    ? (r.userId.name && r.userId.name.trim())
+                        ? r.userId.name
+                        : (r.userId.email ? r.userId.email.split("@")[0] : r.userId._id.toString())
+                    : r.ipAddress || "unknown",
+                responderId: r.userId ? r.userId._id : null,
+                answers: r.answers,
             })),
     };
 }

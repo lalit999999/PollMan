@@ -103,18 +103,18 @@ brew services start mongodb-community
 
 **Google:** https://console.cloud.google.com/
 
-- Create OAuth 2.0 Client ID
-- Redirect URI: `http://localhost:5000/api/auth/google/callback`
+-- Create OAuth 2.0 Client ID
+-- Redirect URI: `http://localhost:3300/api/auth/google/callback`
 
 **GitHub:** https://github.com/settings/developers
 
 - New OAuth App
-- Callback: `http://localhost:5000/api/auth/github/callback`
+- Callback: `http://localhost:3300/api/auth/github/callback`
 
 ### 3. Update `.env`
 
 ```bash
-BACKEND_URL=http://localhost:5000
+BACKEND_URL=http://localhost:3300
 MONGODB_URI=mongodb://localhost:27017/pollman
 
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
@@ -134,7 +134,7 @@ Expected output:
 
 ```
 ✅ MongoDB connected successfully
-✅ Server listening on http://localhost:5000
+✅ Server listening on http://localhost:3300
 ```
 
 ### 5. Test OAuth
@@ -142,7 +142,7 @@ Expected output:
 Open browser:
 
 ```
-http://localhost:5000/api/auth/google
+http://localhost:3300/api/auth/google
 ```
 
 Should redirect to Google login, then to:
@@ -175,7 +175,7 @@ useEffect(() => {
 
 ```jsx
 // api/client.js
-const api = axios.create({ baseURL: "http://localhost:5000/api" });
+const api = axios.create({ baseURL: "http://localhost:3300/api" });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");

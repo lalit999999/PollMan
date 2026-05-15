@@ -141,20 +141,22 @@ curl http://localhost:5000/api/health
 
 **Expected Response:**
 
-```json
+     http://localhost:3300/api/auth/google/callback
+
 {
-  "success": true,
-  "data": {
-    "status": "ok",
-    "uptime": 123.45,
-    "timestamp": "2024-01-15T10:30:00Z"
-  }
+"success": true,
+"data": {
+"status": "ok",
+"uptime": 123.45,
+"timestamp": "2024-01-15T10:30:00Z"
 }
+}
+
 ```
 
 ### 2. Test Google OAuth Login (Manual)
 
-```
+   - Authorization callback URL: `http://localhost:3300/api/auth/github/callback`
 Open in browser:
 http://localhost:5000/api/auth/google
 ```
@@ -165,43 +167,44 @@ http://localhost:5000/api/auth/google
 - User grants permissions
 - Browser redirects to: `http://localhost:5173/auth/success?accessToken=...&refreshToken=...&user=...`
 
-### 3. Test Authenticated Endpoint
+✅ Server listening on http://localhost:3300
 
-```bash
+````bash
 # Get current user
 curl -H "Authorization: Bearer <accessToken>" \
   http://localhost:5000/api/auth/me
-```
+ curl http://localhost:3300/api/health
 
 **Expected Response:**
 
 ```json
 {
-  "success": true,
+ http://localhost:3300/api/auth/google
   "data": {
     "_id": "user_id",
     "email": "user@gmail.com",
     "name": "John Doe",
     "avatar": "https://...",
     "googleId": "...",
-    "createdAt": "2024-01-15T10:30:00Z"
+  http://localhost:3300/api/auth/me
   }
 }
-```
+````
 
 ### 4. Test Logout
 
+http://localhost:3300/api/logout
+
 ```bash
 curl -X POST -H "Authorization: Bearer <accessToken>" \
-  http://localhost:5000/api/logout
 ```
 
 **Expected Response:**
 
 ```json
-{
+ PORT=3300
   "success": true,
-  "message": "Logged out successfully"
+ BACKEND_URL=http://localhost:3300
 }
 ```
 

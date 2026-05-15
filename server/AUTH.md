@@ -51,8 +51,10 @@ Pollman uses OAuth 2.0 for authentication with **Google** (no email/password). J
 3. Enable **Google+ API**
 4. Create **OAuth 2.0 Client ID** (Web application)
 5. Add authorized redirect URI:
-   - `http://localhost:5000/api/auth/google/callback` (dev)
-   - `https://yourapi.com/api/auth/google/callback` (prod)
+
+- `http://localhost:3300/api/auth/google/callback` (dev)
+- `https://yourapi.com/api/auth/google/callback` (prod)
+
 6. Copy **Client ID** and **Client Secret** to `.env`
 
 ### 2. Configure .env
@@ -61,7 +63,7 @@ Pollman uses OAuth 2.0 for authentication with **Google** (no email/password). J
 # OAuth
 GOOGLE_CLIENT_ID=your_id
 GOOGLE_CLIENT_SECRET=your_secret
-BACKEND_URL=http://localhost:5000
+BACKEND_URL=http://localhost:3300
 CLIENT_URL=http://localhost:5173
 JWT_SECRET=openssl_rand_hex_32
 ```
@@ -160,7 +162,7 @@ Authorization: Bearer <accessToken>
 ```jsx
 // Login Page
 const handleGoogleLogin = () => {
-  window.location.href = `http://localhost:5000/api/auth/google`;
+  window.location.href = `http://localhost:3300/api/auth/google`;
 };
 ```
 
@@ -191,7 +193,7 @@ useEffect(() => {
 ```jsx
 // API utility
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "http://localhost:3300/api",
 });
 
 api.interceptors.request.use((config) => {
