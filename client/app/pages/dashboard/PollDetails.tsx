@@ -133,6 +133,18 @@ export default function PollDetails() {
   );
   const [isPublishing, setIsPublishing] = useState(false);
 
+  // Move hooks to top, before any conditional returns
+  const questionLookup = useMemo(
+    () =>
+      new Map(
+        (poll?.questions || []).map((question) => [
+          question._id,
+          question.text,
+        ]),
+      ),
+    [poll?.questions],
+  );
+
   useEffect(() => {
     const loadDetails = async () => {
       if (!id) {
@@ -345,13 +357,6 @@ export default function PollDetails() {
 
   const responseDetails =
     analyticsData.allResponses ?? analyticsData.recentResponses ?? [];
-  const questionLookup = useMemo(
-    () =>
-      new Map(
-        (poll.questions || []).map((question) => [question._id, question.text]),
-      ),
-    [poll.questions],
-  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
