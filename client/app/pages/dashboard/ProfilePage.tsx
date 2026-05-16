@@ -28,6 +28,8 @@ type ProfileSummary = {
     avatar?: string | null;
   };
   totalResponsesReceived: number;
+  publishedPollsCount: number;
+  draftPollsCount: number;
   createdPolls: Array<{
     _id: string;
     title: string;
@@ -35,6 +37,8 @@ type ProfileSummary = {
     createdAt?: string;
     isPublished?: boolean;
     responseCount?: number;
+    expiresAt?: string;
+    status?: string;
   }>;
   topPolls: Array<{
     _id: string;
@@ -64,7 +68,7 @@ export default function ProfilePage() {
       setLoading(true);
       try {
         const res = await getProfileSummary();
-        if (res?.data) setSummary(res.data);
+        if (res) setSummary(res);
       } catch (error) {
         console.error("Failed to load profile summary", error);
         toast.error("Failed to load profile summary.");
@@ -85,7 +89,7 @@ export default function ProfilePage() {
         const fresh = await getProfile();
         if (fresh) setUser(fresh);
         const refreshed = await getProfileSummary();
-        if (refreshed?.data) setSummary(refreshed.data);
+        if (refreshed) setSummary(refreshed);
         toast.success("Profile updated successfully");
       }
     } catch (error) {
@@ -185,11 +189,17 @@ export default function ProfilePage() {
             <CardContent className="p-6 space-y-3">
               <div className="flex items-center gap-3">
                 <Users className="w-5 h-5 text-primary" />
-                <p className="text-sm text-muted-foreground">Polls created</p>
+                <p className="text-sm text-muted-foreground">Published polls</p>
               </div>
               <p className="text-3xl font-bold">
-                {summary?.createdPolls?.length || 0}
+                {summary?.publishedPollsCount || 0}
               </p>
+              {summary?.draftPollsCount ? (
+                <p className="text-xs text-muted-foreground">
+                  {summary.draftPollsCount} draft
+                  {summary.draftPollsCount !== 1 ? "s" : ""}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
           <Card className="glass">
@@ -213,7 +223,7 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle>Top 3 polls</CardTitle>
             <CardDescription>
-              Your polls with the most responses.
+              Your published polls with the most responses.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -223,7 +233,7 @@ export default function ProfilePage() {
                   key={poll._id}
                   className="flex items-start justify-between gap-4 rounded-xl border border-border bg-muted/20 p-4"
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">#{index + 1}</Badge>
                       <p className="font-semibold">{poll.title}</p>
@@ -232,7 +242,7 @@ export default function ProfilePage() {
                       {poll.description || "No description"}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex-shrink-0">
                     <p className="text-lg font-bold">
                       {poll.responseCount || 0}
                     </p>
@@ -242,7 +252,7 @@ export default function ProfilePage() {
               ))
             ) : (
               <p className="text-sm text-muted-foreground">
-                No polls created yet.
+                No published polls with responses yet.
               </p>
             )}
           </CardContent>
@@ -252,7 +262,7 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle>Created polls</CardTitle>
             <CardDescription>
-              All polls you have created, with response counts.
+              All your polls with response counts and status.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 max-h-[520px] overflow-auto pr-1">
@@ -262,8 +272,8 @@ export default function ProfilePage() {
                   key={poll._id}
                   className="rounded-xl border border-border bg-background/60 p-4 space-y-2"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
                       <p className="font-semibold">{poll.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {poll.createdAt
@@ -275,12 +285,22 @@ export default function ProfilePage() {
                       {poll.isPublished ? "Published" : "Draft"}
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-sm gap-2">
                     <span className="text-muted-foreground">Responses</span>
                     <span className="font-semibold">
                       {poll.responseCount || 0}
                     </span>
                   </div>
+                  {poll.isPublished && poll.responseCount ? (
+                    <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary"
+                        style={{
+                          width: `${Math.min((poll.responseCount || 0) * 10, 100)}%`,
+                        }}
+                      />
+                    </div>
+                  ) : null}
                   <Button variant="ghost" className="px-0" asChild>
                     <Link to={`/app/polls/${poll._id}`}>View details</Link>
                   </Button>

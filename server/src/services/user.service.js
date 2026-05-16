@@ -32,12 +32,15 @@ export async function getUserProfileSummary(userId) {
         responseCount: responseCountMap.get(poll._id.toString()) || 0,
     }));
 
-    const totalResponsesReceived = createdPollsWithCounts.reduce(
+    // Only count responses from published polls for analytics
+    const publishedPolls = createdPollsWithCounts.filter((poll) => poll.isPublished);
+    const totalResponsesReceived = publishedPolls.reduce(
         (sum, poll) => sum + (poll.responseCount || 0),
         0,
     );
 
-    const topPolls = [...createdPollsWithCounts]
+    // Top 3 polls from published polls only
+    const topPolls = [...publishedPolls]
         .sort((a, b) => (b.responseCount || 0) - (a.responseCount || 0))
         .slice(0, 3);
 
@@ -46,6 +49,8 @@ export async function getUserProfileSummary(userId) {
         totalResponsesReceived,
         createdPolls: createdPollsWithCounts,
         topPolls,
+        publishedPollsCount: publishedPolls.length,
+        draftPollsCount: createdPollsWithCounts.filter((p) => !p.isPublished).length,
     };
 }
 

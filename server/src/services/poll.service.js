@@ -7,6 +7,18 @@ import {
     emitPollPublished,
 } from "../socket/index.js";
 
+function getEntityId(value) {
+    if (!value) return null;
+
+    if (typeof value === "string") return value;
+
+    if (typeof value === "object" && value._id) {
+        return value._id.toString();
+    }
+
+    return typeof value.toString === "function" ? value.toString() : null;
+}
+
 export async function logPollAccess({
     pollId,
     userId = null,
@@ -148,7 +160,8 @@ export async function getPollById(pollId, userId = null) {
     }
 
     // Check if user can view this poll
-    const isCreator = userId && poll.createdBy.toString() === userId.toString();
+    const creatorId = getEntityId(poll.createdBy);
+    const isCreator = userId && creatorId === userId.toString();
     const isPublished = poll.isPublished;
 
     if (!isCreator && !isPublished) {
@@ -291,7 +304,7 @@ export async function publishPollResults(pollId, userId) {
     }
 
     // Only creator can publish
-    if (poll.createdBy.toString() !== userId.toString()) {
+    if (getEntityId(poll.createdBy) !== userId.toString()) {
         throw new Error("Not authorized to publish this poll");
     }
 
@@ -312,7 +325,7 @@ export async function publishPoll(pollId, userId) {
         throw new Error("Poll not found");
     }
 
-    if (poll.createdBy.toString() !== userId.toString()) {
+    if (getEntityId(poll.createdBy) !== userId.toString()) {
         throw new Error("Not authorized to publish this poll");
     }
 
@@ -353,7 +366,7 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
     }
 
     // Check if user is the creator of the poll
-    if (userId && poll.createdBy.toString() === userId.toString()) {
+    if (userId && getEntityId(poll.createdBy) === userId.toString()) {
         throw new Error("Poll creators cannot answer their own polls");
     }
 
@@ -498,7 +511,7 @@ export async function getPollAnalytics(pollId, userId) {
     }
 
     // Only creator can view analytics
-    if (poll.createdBy.toString() !== userId.toString()) {
+    if (getEntityId(poll.createdBy) !== userId.toString()) {
         throw new Error("Not authorized to view analytics");
     }
 

@@ -45,6 +45,7 @@ import {
   Clock,
   Settings,
   Trash2,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -132,6 +133,7 @@ export default function PollDetails() {
   const [poll, setPoll] = useState<ApiPoll | null>(null);
   const [analytics, setAnalytics] = useState<PollAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [publishMode, setPublishMode] = useState<"publish" | "results" | null>(
     null,
@@ -153,11 +155,13 @@ export default function PollDetails() {
   useEffect(() => {
     const loadDetails = async () => {
       if (!id) {
-        toast.error("Poll id is missing.");
+        setError("Poll id is missing.");
+        setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
+      setError(null);
       try {
         const [pollResponse, analyticsResponse] = await Promise.allSettled([
           getPollById(id),
@@ -169,7 +173,13 @@ export default function PollDetails() {
             (pollResponse.value as any).data || pollResponse.value;
           setPoll(pollData as ApiPoll);
         } else {
-          throw pollResponse.reason;
+          const errorMsg =
+            (pollResponse.reason as any)?.message ||
+            "Poll details could not be loaded.";
+          setError(errorMsg);
+          setPoll(null);
+          toast.error(errorMsg);
+          return;
         }
 
         if (analyticsResponse.status === "fulfilled") {
@@ -180,12 +190,14 @@ export default function PollDetails() {
           setAnalytics(null);
         }
       } catch (error: any) {
-        console.error("Error loading poll details:", error);
-        toast.error(
+        const errorMsg =
           error?.response?.data?.message ||
-            error?.message ||
-            "Failed to load poll details.",
-        );
+          error?.message ||
+          "Poll details could not be loaded.";
+        setError(errorMsg);
+        setPoll(null);
+        console.error("Error loading poll details:", error);
+        toast.error(errorMsg);
       } finally {
         setIsLoading(false);
       }
@@ -327,10 +339,29 @@ export default function PollDetails() {
     );
   }
 
-  if (!poll) {
+  if (!poll && !isLoading) {
     return (
-      <div className="max-w-5xl mx-auto py-20 text-center text-muted-foreground">
-        Poll details could not be loaded.
+      <div className="max-w-5xl mx-auto py-20 px-4">
+        <div className="text-center space-y-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">
+              Poll details could not be loaded.
+            </h2>
+            <p className="text-muted-foreground">
+              {error ||
+                "The poll you're looking for doesn't exist or you don't have permission to view it."}
+            </p>
+          </div>
+          <Button asChild variant="outline">
+            <Link to="/app/polls">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Polls
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
