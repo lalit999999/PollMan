@@ -13,6 +13,7 @@ import MyPolls from "./pages/dashboard/MyPolls";
 import CreatePoll from "./pages/dashboard/CreatePoll";
 import EditPoll from "./pages/dashboard/EditPoll";
 import PollDetails from "./pages/dashboard/PollDetails";
+import ProfilePage from "./pages/dashboard/ProfilePage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import PublicPoll from "./pages/public/PublicPoll";
 import PublicResults from "./pages/public/PublicResults";
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
               { path: "polls/new", element: <CreatePoll /> },
               { path: "polls/:id/edit", element: <EditPoll /> },
               { path: "polls/:id", element: <PollDetails /> },
+              { path: "profile", element: <ProfilePage /> },
               { path: "settings", element: <SettingsPage /> },
             ],
           },

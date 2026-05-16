@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getProfile, updateProfile, unlinkProvider } from "../controllers/user.controller.js";
+import { getProfile, getProfileSummary, updateProfile, unlinkProvider } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
@@ -9,6 +9,9 @@ router.use(authMiddleware);
 
 // GET /api/user/profile
 router.get("/profile", getProfile);
+
+// GET /api/user/profile/summary
+router.get("/profile/summary", getProfileSummary);
 
 // PATCH /api/user/profile
 router.patch("/profile", updateProfile);

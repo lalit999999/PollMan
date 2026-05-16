@@ -11,11 +11,14 @@ const emptyPoll: PollFormValues = {
   description: "",
   isAnonymous: false,
   allowResultsPublish: true,
+  passwordProtected: false,
+  password: null,
   expiresAt: "",
   questions: [
     {
       text: "",
       isRequired: true,
+      allowOpinionText: false,
       options: [{ text: "" }, { text: "" }],
     },
   ],

@@ -479,21 +479,21 @@ const getAnalytics = async (pollId) => {
 
 ```bash
 # Create poll
-curl -X POST http://localhost:5000/api/polls \
+curl -X POST http://localhost:3300/api/polls \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{...}'
 
 # Get poll
-curl http://localhost:5000/api/polls/poll_id
+curl http://localhost:3300/api/polls/poll_id
 
 # Submit response
-curl -X POST http://localhost:5000/api/polls/poll_id/respond \
+curl -X POST http://localhost:3300/api/polls/poll_id/respond \
   -H "Content-Type: application/json" \
   -d '{"answers":[...]}'
 
 # Get analytics
-curl http://localhost:5000/api/polls/poll_id/analytics \
+curl http://localhost:3300/api/polls/poll_id/analytics \
   -H "Authorization: Bearer TOKEN"
 ```
 

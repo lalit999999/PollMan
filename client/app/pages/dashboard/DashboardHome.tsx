@@ -29,6 +29,7 @@ import { getDashboardOverview } from "../../services/pollService";
 import { toast } from "sonner";
 import { connectSocket, disconnectSocket } from "../../lib/socketClient";
 import { useAuth } from "../../context/AuthContext";
+import { Loader } from "../../components/ui/Loader";
 
 function formatTime(value?: string) {
   if (!value) return "—";
@@ -266,8 +267,8 @@ export default function DashboardHome() {
           </CardHeader>
           <CardContent className="flex-1 flex flex-col gap-4">
             {loading ? (
-              <div className="text-sm text-muted-foreground">
-                Loading recent polls...
+              <div className="flex items-center justify-center py-10">
+                <Loader label="Loading recent polls" />
               </div>
             ) : overview?.recentPolls?.length ? (
               overview.recentPolls.map((poll: any) => {
@@ -287,9 +288,12 @@ export default function DashboardHome() {
                     to={`/app/polls/${poll._id}`}
                     className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    <div className="space-y-1 truncate pr-4">
+                    <div className="space-y-1 truncate pr-4 max-w-[70%]">
                       <p className="font-medium leading-none truncate">
                         {poll.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {poll.description || "No description provided."}
                       </p>
                       <div className="flex items-center text-xs text-muted-foreground gap-2">
                         <span>{poll.totalResponses || 0} responses</span>
@@ -324,8 +328,8 @@ export default function DashboardHome() {
           </CardHeader>
           <CardContent className="space-y-3">
             {loading ? (
-              <div className="text-sm text-muted-foreground">
-                Loading activity...
+              <div className="flex items-center justify-center py-10">
+                <Loader label="Loading activity" />
               </div>
             ) : overview?.recentActivity?.length ? (
               overview.recentActivity.slice(0, 8).map((item: any) => (

@@ -14,6 +14,14 @@ export async function getProfile() {
   return res?.data || null;
 }
 
+export async function getProfileSummary() {
+  const res = await apiClient.get<{ success: boolean; data: any }>(
+    "/user/profile/summary",
+  );
+
+  return res?.data || null;
+}
+
 export default { getProfile };
 
 export async function unlinkProvider(provider: "google") {

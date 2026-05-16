@@ -32,6 +32,7 @@ import {
   ApiPoll,
 } from "../../services/pollService";
 import { toast } from "sonner";
+import { Loader } from "../../components/ui/Loader";
 
 export default function MyPolls() {
   const [search, setSearch] = useState("");
@@ -130,8 +131,8 @@ export default function MyPolls() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
-          <div className="col-span-full py-8 text-center text-muted-foreground">
-            Loading polls...
+          <div className="col-span-full py-16 flex items-center justify-center">
+            <Loader label="Loading polls" />
           </div>
         ) : (
           filteredPolls.map((poll, i) => {
@@ -187,6 +188,9 @@ export default function MyPolls() {
                         {poll.title}
                       </h3>
                     </Link>
+                    <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
+                      {poll.description || "No description provided."}
+                    </p>
                     <div className="text-sm text-muted-foreground">
                       Created{" "}
                       {new Date(

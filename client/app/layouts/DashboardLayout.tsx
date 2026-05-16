@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   ListChecks,
   PlusCircle,
+  UserCircle2,
   Settings,
   LogOut,
   Sun,
@@ -29,6 +30,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 const NAV_ITEMS = [
   { path: "/app", icon: LayoutDashboard, label: "Dashboard", end: true },
+  { path: "/app/profile", icon: UserCircle2, label: "Profile" },
   { path: "/app/polls", icon: ListChecks, label: "My Polls" },
   { path: "/app/polls/new", icon: PlusCircle, label: "Create Poll" },
 ];

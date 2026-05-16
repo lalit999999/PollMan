@@ -3,6 +3,7 @@ import {
   Controller,
   useFieldArray,
   useForm,
+  useWatch,
   type FieldErrors,
   type SubmitHandler,
 } from "react-hook-form";
@@ -60,6 +61,7 @@ type PollFormBuilderProps = {
 const createQuestion = () => ({
   text: "",
   isRequired: true,
+  allowOpinionText: false,
   options: [{ text: "" }, { text: "" }],
 });
 
@@ -103,6 +105,11 @@ function validateValues(values: PollFormValues, mode: PollFormMode = "create") {
       return `Question ${index + 1} text is required.`;
     }
 
+    // Skip option validation if this is an opinion-only question
+    if (question.allowOpinionText) {
+      continue;
+    }
+
     const optionTexts = question.options
       .map((option) => option.text.trim())
       .filter(Boolean);
@@ -141,6 +148,11 @@ function QuestionEditor({
   const { fields, append, remove } = useFieldArray({
     control,
     name: `questions.${index}.options` as const,
+  });
+
+  const allowOpinionText = useWatch({
+    control,
+    name: `questions.${index}.allowOpinionText`,
   });
 
   const questionErrors = errors.questions?.[index] as
@@ -214,59 +226,94 @@ function QuestionEditor({
               </div>
             </div>
           </div>
-          <div className="ml-auto text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            {fields.length} options
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {fields.map((field, optionIndex) => {
-            const optionError =
-              questionErrors?.options?.[optionIndex]?.text?.message;
-
-            return (
-              <div key={field.id} className="flex items-start gap-3">
-                <div className="mt-3 h-5 w-5 rounded-full border border-border flex items-center justify-center text-[10px] font-semibold text-muted-foreground">
-                  {optionIndex + 1}
-                </div>
-                <div className="flex-1 space-y-2">
-                  <Input
-                    placeholder={`Option ${optionIndex + 1}`}
-                    className="bg-background"
-                    {...register(
-                      `questions.${index}.options.${optionIndex}.text` as const,
-                      {
-                        required: "Option text is required.",
-                      },
-                    )}
-                  />
-                  <FieldError message={optionError} />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="mt-0.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                  onClick={() => remove(optionIndex)}
-                  disabled={fields.length <= 2}
-                  title="Remove option"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+          <div className="flex items-center gap-2">
+            <Controller
+              control={control}
+              name={`questions.${index}.allowOpinionText` as const}
+              render={({ field }) => (
+                <Switch
+                  checked={!!field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <div>
+              <div className="text-sm font-medium">Allow opinion text</div>
+              <div className="text-xs text-muted-foreground">
+                Show a text area for respondents on this question.
               </div>
-            );
-          })}
+            </div>
+          </div>
+          {!allowOpinionText && (
+            <div className="ml-auto text-xs uppercase tracking-[0.24em] text-muted-foreground">
+              {fields.length} options
+            </div>
+          )}
         </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"
-          onClick={() => append({ text: "" })}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add option
-        </Button>
+        {allowOpinionText ? (
+          <div className="flex items-center justify-center gap-3 rounded-lg border-2 border-dashed border-amber-500/30 bg-amber-500/10 p-6">
+            <div className="text-center">
+              <p className="font-semibold text-sm text-amber-900/80">
+                Opinion only
+              </p>
+              <p className="text-xs text-amber-900/60">
+                Respondents will only provide text opinions for this question.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {fields.map((field, optionIndex) => {
+              const optionError =
+                questionErrors?.options?.[optionIndex]?.text?.message;
+
+              return (
+                <div key={field.id} className="flex items-start gap-3">
+                  <div className="mt-3 h-5 w-5 rounded-full border border-border flex items-center justify-center text-[10px] font-semibold text-muted-foreground">
+                    {optionIndex + 1}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      placeholder={`Option ${optionIndex + 1}`}
+                      className="bg-background"
+                      {...register(
+                        `questions.${index}.options.${optionIndex}.text` as const,
+                        {
+                          required: "Option text is required.",
+                        },
+                      )}
+                    />
+                    <FieldError message={optionError} />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="mt-0.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                    onClick={() => remove(optionIndex)}
+                    disabled={fields.length <= 2}
+                    title="Remove option"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!allowOpinionText && (
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            onClick={() => append({ text: "" })}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add option
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -296,11 +343,16 @@ export default function PollFormBuilder({
       description: initialValues.description || "",
       isAnonymous: initialValues.isAnonymous || false,
       allowResultsPublish: initialValues.allowResultsPublish ?? true,
+      passwordProtected: initialValues.passwordProtected ?? false,
+      password: initialValues.password ?? null,
+      isResponseLimited: initialValues.isResponseLimited ?? false,
+      responseLimit: initialValues.responseLimit ?? null,
       expiresAt: toDateTimeLocalValue(initialValues.expiresAt),
       questions: initialValues.questions?.length
         ? initialValues.questions.map((question) => ({
             text: question.text || "",
             isRequired: question.isRequired ?? true,
+            allowOpinionText: question.allowOpinionText ?? false,
             options: question.options?.length
               ? question.options.map((option) => ({ text: option.text || "" }))
               : [{ text: "" }, { text: "" }],
@@ -340,6 +392,7 @@ export default function PollFormBuilder({
   const questionCountHint = `${watchedQuestions?.length || 0} question${(watchedQuestions?.length || 0) === 1 ? "" : "s"} ready`;
   const isAnonymous = watch("isAnonymous");
   const allowResultsPublish = watch("allowResultsPublish");
+  const passwordProtected = watch("passwordProtected");
 
   const runAction = async (action: "save" | "publish") => {
     const values = getValues();
@@ -604,6 +657,86 @@ export default function PollFormBuilder({
                   <CalendarDays className="h-4 w-4 text-primary" />
                   Expiry date <span className="text-red-500">*</span>
                 </Label>
+
+                <div className="flex items-start justify-between gap-4 rounded-2xl border border-border/60 bg-muted/20 p-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="passwordProtected" className="text-sm">
+                      Password protect poll
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Require a password for respondents to access this poll.
+                    </p>
+                  </div>
+                  <Controller
+                    control={control}
+                    name="passwordProtected"
+                    render={({ field }) => (
+                      <Switch
+                        checked={!!field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                {passwordProtected ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Response password</Label>
+                    <Input
+                      id="password"
+                      placeholder="Enter a password respondents must use"
+                      type="text"
+                      className="bg-background"
+                      {...register("password")}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Keep this secret — respondents will need this password to
+                      answer the poll.
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className="space-y-1">
+                  <Label htmlFor="isResponseLimited" className="text-sm">
+                    Limit responses
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Set a maximum number of responses this poll can accept.
+                  </p>
+                </div>
+                <Controller
+                  control={control}
+                  name="isResponseLimited"
+                  render={({ field }) => (
+                    <Switch
+                      checked={!!field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+
+                {watch("isResponseLimited") ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="responseLimit">Response limit</Label>
+                    <Input
+                      id="responseLimit"
+                      placeholder="Enter maximum number of responses"
+                      type="number"
+                      className="bg-background"
+                      {...register("responseLimit", {
+                        min: {
+                          value: 1,
+                          message: "Response limit must be at least 1",
+                        },
+                      })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Once this limit is reached, no new responses will be
+                      accepted.
+                    </p>
+                  </div>
+                ) : null}
+
                 <Input
                   id="expiresAt"
                   type="datetime-local"

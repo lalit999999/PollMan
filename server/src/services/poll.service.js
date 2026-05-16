@@ -1,10 +1,23 @@
 import { Poll, Question, Response, PollAccessLog } from "../models/index.js";
+import bcrypt from "bcryptjs";
 import {
     emitPollAnalyticsUpdate,
     emitPollResponseNew,
     emitPollCreated,
     emitPollPublished,
 } from "../socket/index.js";
+
+function getEntityId(value) {
+    if (!value) return null;
+
+    if (typeof value === "string") return value;
+
+    if (typeof value === "object" && value._id) {
+        return value._id.toString();
+    }
+
+    return typeof value.toString === "function" ? value.toString() : null;
+}
 
 export async function logPollAccess({
     pollId,
@@ -72,6 +85,10 @@ export async function createPoll(userId, pollData) {
         isAnonymous = false,
         expiresAt = null,
         allowResultsPublish = true,
+        passwordProtected = false,
+        password = null,
+        isResponseLimited = false,
+        responseLimit = null,
     } = pollData;
 
     // Create poll
@@ -82,7 +99,19 @@ export async function createPoll(userId, pollData) {
         isAnonymous,
         expiresAt,
         allowResultsPublish,
+        passwordProtected,
+        isResponseLimited,
+        responseLimit: isResponseLimited ? responseLimit : null,
     });
+
+    // If password protection is enabled and a password provided, hash it
+    if (passwordProtected && password) {
+        try {
+            poll.passwordHash = bcrypt.hashSync(String(password).toUpperCase(), 10);
+        } catch (err) {
+            console.warn("Failed to hash poll password:", err?.message || err);
+        }
+    }
 
     await poll.save();
 
@@ -98,6 +127,7 @@ export async function createPoll(userId, pollData) {
                     count: 0,
                 })),
                 isRequired: q.isRequired || false,
+                allowOpinionText: q.allowOpinionText || false,
                 order: index,
             })),
         );
@@ -123,14 +153,15 @@ export async function createPoll(userId, pollData) {
 }
 
 export async function getPollById(pollId, userId = null) {
-    const poll = await Poll.findById(pollId).populate("questions");
+    const poll = await Poll.findById(pollId).populate("questions").populate("createdBy", "name email");
 
     if (!poll) {
         throw new Error("Poll not found");
     }
 
     // Check if user can view this poll
-    const isCreator = userId && poll.createdBy.toString() === userId.toString();
+    const creatorId = getEntityId(poll.createdBy);
+    const isCreator = userId && creatorId === userId.toString();
     const isPublished = poll.isPublished;
 
     if (!isCreator && !isPublished) {
@@ -165,6 +196,29 @@ export async function updatePoll(pollId, userId, updateData) {
     if (typeof updateData.allowResultsPublish === "boolean") {
         poll.allowResultsPublish = updateData.allowResultsPublish;
     }
+    // Handle password protection updates
+    if (typeof updateData.passwordProtected === "boolean") {
+        poll.passwordProtected = updateData.passwordProtected;
+
+        if (poll.passwordProtected) {
+            if (updateData.password) {
+                try {
+                    poll.passwordHash = bcrypt.hashSync(String(updateData.password).toUpperCase(), 10);
+                } catch (err) {
+                    console.warn("Failed to hash updated poll password:", err?.message || err);
+                }
+            }
+            // If enabling protection but no password provided, keep existing hash
+        } else {
+            // If disabling protection, clear stored hash
+            poll.passwordHash = null;
+        }
+    }
+    // Handle response limit updates
+    if (typeof updateData.isResponseLimited === "boolean") {
+        poll.isResponseLimited = updateData.isResponseLimited;
+        poll.responseLimit = updateData.isResponseLimited ? Number(updateData.responseLimit) || null : null;
+    }
     if (updateData.expiresAt !== undefined) {
         poll.expiresAt = updateData.expiresAt;
     }
@@ -185,6 +239,7 @@ export async function updatePoll(pollId, userId, updateData) {
                 existingQuestion.type = "single-choice";
                 existingQuestion.options = normalizedOptions;
                 existingQuestion.isRequired = q.isRequired || false;
+                existingQuestion.allowOpinionText = q.allowOpinionText || false;
                 existingQuestion.order = index;
                 if (typeof existingQuestion.voteCount !== "number") {
                     existingQuestion.voteCount = 0;
@@ -201,6 +256,7 @@ export async function updatePoll(pollId, userId, updateData) {
                         count: opt.count,
                     })),
                     isRequired: q.isRequired || false,
+                    allowOpinionText: q.allowOpinionText || false,
                     voteCount: 0,
                     order: index,
                 });
@@ -223,6 +279,23 @@ export async function updatePoll(pollId, userId, updateData) {
     return poll.populate("questions");
 }
 
+export async function verifyPollPassword(pollId, password) {
+    const poll = await Poll.findById(pollId).select('+passwordHash');
+
+    if (!poll) throw new Error('Poll not found');
+
+    if (!poll.passwordProtected) return true;
+
+    if (!password) return false;
+
+    try {
+        return bcrypt.compareSync(String(password).toUpperCase(), poll.passwordHash || "");
+    } catch (err) {
+        console.warn('Password verification failed:', err?.message || err);
+        return false;
+    }
+}
+
 export async function publishPollResults(pollId, userId) {
     const poll = await Poll.findById(pollId);
 
@@ -231,7 +304,7 @@ export async function publishPollResults(pollId, userId) {
     }
 
     // Only creator can publish
-    if (poll.createdBy.toString() !== userId.toString()) {
+    if (getEntityId(poll.createdBy) !== userId.toString()) {
         throw new Error("Not authorized to publish this poll");
     }
 
@@ -252,7 +325,7 @@ export async function publishPoll(pollId, userId) {
         throw new Error("Poll not found");
     }
 
-    if (poll.createdBy.toString() !== userId.toString()) {
+    if (getEntityId(poll.createdBy) !== userId.toString()) {
         throw new Error("Not authorized to publish this poll");
     }
 
@@ -293,13 +366,18 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
     }
 
     // Check if user is the creator of the poll
-    if (userId && poll.createdBy.toString() === userId.toString()) {
+    if (userId && getEntityId(poll.createdBy) === userId.toString()) {
         throw new Error("Poll creators cannot answer their own polls");
     }
 
     // Check expiry
     if (poll.expiresAt && new Date() > new Date(poll.expiresAt)) {
         throw new Error("Poll has expired");
+    }
+
+    // Check response limit
+    if (poll.isResponseLimited && poll.responseLimit && poll.totalResponses >= poll.responseLimit) {
+        throw new Error("Response limit has been reached for this poll");
     }
 
     // Check if user already responded
@@ -346,10 +424,11 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
     // Create response
     const response = new Response({
         pollId,
-        userId: poll.isAnonymous ? null : userId,
+        userId: userId || null,  // Always capture userId if logged in, regardless of poll anonymous setting
         answers: answers.map((a) => ({
             questionId: a.questionId,
             selectedOption: a.selectedOption,
+            opinion: a.opinion?.trim() || "",
         })),
         isAnonymous: poll.isAnonymous,
         ipAddress,
@@ -361,14 +440,24 @@ export async function submitPollResponse(pollId, responseData, userId = null) {
 
     // Update question option counts
     for (const answer of answers) {
-        await Question.findByIdAndUpdate(answer.questionId, {
-            $inc: {
-                voteCount: 1,
-                "options.$[opt].count": 1,
-            },
-        }, {
-            arrayFilters: [{ "opt.text": answer.selectedOption }],
-        });
+        if (answer.selectedOption) {
+            // For questions with options, update both voteCount and option count
+            await Question.findByIdAndUpdate(answer.questionId, {
+                $inc: {
+                    voteCount: 1,
+                    "options.$[opt].count": 1,
+                },
+            }, {
+                arrayFilters: [{ "opt.text": answer.selectedOption }],
+            });
+        } else {
+            // For opinion-only questions with no selected option, just increment voteCount
+            await Question.findByIdAndUpdate(answer.questionId, {
+                $inc: {
+                    voteCount: 1,
+                },
+            });
+        }
     }
 
     // Update poll total responses
@@ -422,12 +511,32 @@ export async function getPollAnalytics(pollId, userId) {
     }
 
     // Only creator can view analytics
-    if (poll.createdBy.toString() !== userId.toString()) {
+    if (getEntityId(poll.createdBy) !== userId.toString()) {
         throw new Error("Not authorized to view analytics");
     }
 
-    // Get all responses
-    const responses = await Response.find({ pollId }).sort({ createdAt: 1 });
+    // Get all responses (populate user info when available)
+    const responses = await Response.find({ pollId })
+        .sort({ createdAt: 1 })
+        .populate("userId", "name email avatar");
+
+    const responseItems = responses.map((r) => ({
+        responseId: r._id,
+        respondedAt: r.createdAt,
+        completionPercentage: r.completionPercentage,
+        isAnonymous: r.isAnonymous,
+        userName: r.userId?.name || null,
+        userEmail: r.userId?.email || null,
+        userAvatar: r.userId?.avatar || null,
+        ipAddress: r.ipAddress || null,
+        responder: r.userId
+            ? (r.userId.name && r.userId.name.trim())
+                ? r.userId.name
+                : (r.userId.email ? r.userId.email.split("@")[0] : r.userId._id.toString())
+            : r.ipAddress || "unknown",
+        responderId: r.userId ? r.userId._id : null,
+        answers: r.answers,
+    }));
 
     // Build analytics
     const questionAnalytics = poll.questions.map((question) => {
@@ -489,6 +598,10 @@ export async function getPollAnalytics(pollId, userId) {
     return {
         pollId,
         title: poll.title,
+        isResponseLimited: poll.isResponseLimited || false,
+        responseLimit: poll.responseLimit ?? null,
+        responseLimitReached:
+            !!(poll.isResponseLimited && poll.responseLimit && responses.length >= poll.responseLimit),
         totalResponses: responses.length,
         completionRate,
         completionPercentage: averageCompletion,
@@ -497,30 +610,18 @@ export async function getPollAnalytics(pollId, userId) {
         resultsPublished: poll.resultsPublished,
         questionAnalytics,
         timeline: buildTimelineBuckets(responses),
-        recentResponses: responses
-            .slice(-10)
-            .reverse()
-            .map((r) => ({
-                respondedAt: r.createdAt,
-                completionPercentage: r.completionPercentage,
-                isAnonymous: r.isAnonymous,
-            })),
+        allResponses: responseItems,
+        recentResponses: responseItems.slice(-10).reverse(),
     };
 }
 
 export async function getDashboardOverview(userId) {
-    const [polls, recentLogs] = await Promise.all([
-        Poll.find({ createdBy: userId }).sort({ createdAt: -1 }).select("title description createdAt isPublished resultsPublished expiresAt totalResponses status"),
-        PollAccessLog.find({ userId })
-            .sort({ createdAt: -1 })
-            .limit(12)
-            .lean(),
-    ]);
+    const polls = await Poll.find({ createdBy: userId });
 
-    const pollIds = polls.map((poll) => poll._id);
+    // Get response counts per poll
     const responseCounts = await Response.aggregate([
-        { $match: { pollId: { $in: pollIds } } },
-        { $group: { _id: "$pollId", total: { $sum: 1 } } },
+        { $match: { pollId: { $in: polls.map((p) => p._id) } } },
+        { $group: { _id: "$pollId", total: { $count: {} } } },
     ]);
 
     const responseCountMap = new Map(
@@ -528,10 +629,21 @@ export async function getDashboardOverview(userId) {
     );
 
     const totalResponses = responseCounts.reduce((sum, row) => sum + row.total, 0);
-    const activePolls = polls.filter((poll) => poll.isPublished && (!poll.expiresAt || new Date(poll.expiresAt) > new Date())).length;
+    const activePolls = polls.filter(
+        (poll) =>
+            poll.isPublished &&
+            (!poll.expiresAt || new Date(poll.expiresAt) > new Date()),
+    ).length;
 
+    // Get 7-day activity
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    const recentLogs = await PollAccessLog.find({
+        userId,
+        createdAt: { $gte: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) },
+    });
+
     const dailySeries = Array.from({ length: 7 }, (_, index) => {
         const day = new Date(today);
         day.setDate(today.getDate() - (6 - index));
@@ -571,9 +683,9 @@ export async function getDashboardOverview(userId) {
             resultsPublished: poll.resultsPublished,
             expiresAt: poll.expiresAt,
             status: poll.status,
-            totalResponses: responseCountMap.get(poll._id.toString()) || poll.totalResponses || 0,
+            totalResponses: responseCountMap.get(poll._id.toString()) || 0,
         })),
-        recentActivity: recentLogs.map((log) => ({
+        recentActivity: recentLogs.slice(0, 10).map((log) => ({
             _id: log._id,
             action: log.action,
             metadata: log.metadata || {},

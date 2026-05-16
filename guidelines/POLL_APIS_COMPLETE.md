@@ -93,13 +93,13 @@ See [POLL_APIs.md](./POLL_APIs.md) for full examples.
 
 ---
 
-## Quick Test
+# Quick Test
 
 After updating routes/index.js and starting server:
 
 ```bash
 # Create poll
-curl -X POST http://localhost:5000/api/polls \
+curl -X POST http://localhost:3300/api/polls \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -114,14 +114,14 @@ curl -X POST http://localhost:5000/api/polls \
 # Should return poll with _id
 
 # Get poll
-curl http://localhost:5000/api/polls/POLL_ID
+curl http://localhost:3300/api/polls/POLL_ID
 
 # Submit response
-curl -X POST http://localhost:5000/api/polls/POLL_ID/respond \
+curl -X POST http://localhost:3300/api/polls/POLL_ID/respond \
   -d '{"answers":[{"questionId":"Q_ID","selectedOption":"A"}]}'
 
 # Get analytics (requires auth if not creator)
-curl http://localhost:5000/api/polls/POLL_ID/analytics \
+curl http://localhost:3300/api/polls/POLL_ID/analytics \
   -H "Authorization: Bearer TOKEN"
 ```
 

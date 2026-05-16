@@ -74,7 +74,7 @@ You should see:
 
 ```
 ✅ MongoDB connected successfully
-✅ Server listening on http://localhost:5000
+✅ Server listening on http://localhost:3300
 ```
 
 ---
@@ -84,7 +84,7 @@ You should see:
 ### 1. Create Poll
 
 ```bash
-curl -X POST http://localhost:5000/api/polls \
+curl -X POST http://localhost:3300/api/polls \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -123,13 +123,13 @@ Expected response:
 ### 2. Get Poll
 
 ```bash
-curl http://localhost:5000/api/polls/POLL_ID
+curl http://localhost:3300/api/polls/POLL_ID
 ```
 
 ### 3. Submit Response
 
 ```bash
-curl -X POST http://localhost:5000/api/polls/POLL_ID/respond \
+curl -X POST http://localhost:3300/api/polls/POLL_ID/respond \
   -H "Content-Type: application/json" \
   -d '{
     "answers": [
@@ -144,14 +144,14 @@ curl -X POST http://localhost:5000/api/polls/POLL_ID/respond \
 ### 4. Get Analytics
 
 ```bash
-curl http://localhost:5000/api/polls/POLL_ID/analytics \
+curl http://localhost:3300/api/polls/POLL_ID/analytics \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### 5. Publish Results
 
 ```bash
-curl -X POST http://localhost:5000/api/polls/POLL_ID/publish \
+curl -X POST http://localhost:3300/api/polls/POLL_ID/publish \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -208,7 +208,7 @@ See [POLL_APIs.md](./POLL_APIs.md) for detailed documentation on:
 
 ### Routes not working (404)
 
-**Issue:** `GET http://localhost:5000/api/polls/123` returns 404
+**Issue:** `GET http://localhost:3300/api/polls/123` returns 404
 
 **Solution:** Make sure you updated `server/src/routes/index.js` to include poll routes.
 

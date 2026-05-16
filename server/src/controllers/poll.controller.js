@@ -6,13 +6,14 @@ import {
     publishPollResults,
     submitPollResponse,
     getPollAnalytics,
+    verifyPollPassword,
     logPollAccess,
 } from "../services/poll.service.js";
 import { Poll } from "../models/index.js";
 
 export async function handleCreatePoll(req, res) {
     try {
-        const { title, description, questions, isAnonymous, expiresAt, allowResultsPublish } =
+        const { title, description, questions, isAnonymous, expiresAt, allowResultsPublish, passwordProtected, password, isResponseLimited, responseLimit } =
             req.body;
 
         if (!title || !title.trim()) {
@@ -43,6 +44,10 @@ export async function handleCreatePoll(req, res) {
             isAnonymous,
             expiresAt,
             allowResultsPublish,
+            passwordProtected,
+            password,
+            isResponseLimited,
+            responseLimit,
         });
 
         return res.status(201).json({
@@ -120,6 +125,10 @@ export async function handleUpdatePoll(req, res) {
             isAnonymous,
             expiresAt,
             allowResultsPublish,
+            passwordProtected,
+            password,
+            isResponseLimited,
+            responseLimit,
         } = req.body;
 
         const poll = await updatePoll(id, req.user._id, {
@@ -129,6 +138,10 @@ export async function handleUpdatePoll(req, res) {
             isAnonymous,
             expiresAt,
             allowResultsPublish,
+            passwordProtected,
+            password,
+            isResponseLimited,
+            responseLimit,
         });
 
         return res.status(200).json({
@@ -142,6 +155,24 @@ export async function handleUpdatePoll(req, res) {
             success: false,
             message: error.message,
         });
+    }
+}
+
+export async function handleVerifyPollPassword(req, res) {
+    try {
+        const { id } = req.params;
+        const { password } = req.body;
+
+        const ok = await verifyPollPassword(id, password);
+
+        if (!ok) {
+            return res.status(401).json({ success: false, message: 'Incorrect poll password' });
+        }
+
+        return res.status(200).json({ success: true, message: 'Password verified' });
+    } catch (error) {
+        const statusCode = error.message === 'Poll not found' ? 404 : 400;
+        return res.status(statusCode).json({ success: false, message: error.message });
     }
 }
 
@@ -202,7 +233,7 @@ export async function handleSubmitResponse(req, res) {
 
         const response = await submitPollResponse(
             id,
-            { answers, ipAddress, userAgent },
+            { answers: req.body.answers, ipAddress, userAgent },
             req.user?._id,
         );
 

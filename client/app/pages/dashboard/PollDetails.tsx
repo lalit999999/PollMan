@@ -12,6 +12,19 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../components/ui/avatar";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -32,6 +45,7 @@ import {
   Clock,
   Settings,
   Trash2,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -44,10 +58,14 @@ import {
 } from "../../services/pollService";
 import { useAuth } from "../../context/AuthContext";
 import { connectSocket, disconnectSocket } from "../../lib/socketClient";
+import { Loader } from "../../components/ui/Loader";
 
 type PollAnalytics = {
   pollId: string;
   title: string;
+  isResponseLimited?: boolean;
+  responseLimit?: number | null;
+  responseLimitReached?: boolean;
   totalResponses: number;
   completionRate: number;
   completionPercentage: number;
@@ -69,10 +87,39 @@ type PollAnalytics = {
     hourly?: Array<{ bucket: string; count: number }>;
     daily?: Array<{ bucket: string; count: number }>;
   };
-  recentResponses?: Array<{
+  allResponses?: Array<{
+    responseId?: string;
+    responder: string;
+    userName?: string | null;
+    userEmail?: string | null;
+    userAvatar?: string | null;
+    ipAddress?: string | null;
+    responderId?: string | null;
     respondedAt: string;
     completionPercentage: number;
     isAnonymous: boolean;
+    answers?: Array<{
+      questionId: string;
+      selectedOption: string;
+      opinion?: string;
+    }>;
+  }>;
+  recentResponses?: Array<{
+    responseId?: string;
+    responder: string;
+    userName?: string | null;
+    userEmail?: string | null;
+    userAvatar?: string | null;
+    ipAddress?: string | null;
+    responderId?: string | null;
+    respondedAt: string;
+    completionPercentage: number;
+    isAnonymous: boolean;
+    answers?: Array<{
+      questionId: string;
+      selectedOption: string;
+      opinion?: string;
+    }>;
   }>;
 };
 
@@ -87,20 +134,35 @@ export default function PollDetails() {
   const [poll, setPoll] = useState<ApiPoll | null>(null);
   const [analytics, setAnalytics] = useState<PollAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [publishMode, setPublishMode] = useState<"publish" | "results" | null>(
     null,
   );
   const [isPublishing, setIsPublishing] = useState(false);
 
+  // Move hooks to top, before any conditional returns
+  const questionLookup = useMemo(
+    () =>
+      new Map(
+        (poll?.questions || []).map((question) => [
+          question._id,
+          question.text,
+        ]),
+      ),
+    [poll?.questions],
+  );
+
   useEffect(() => {
     const loadDetails = async () => {
       if (!id) {
-        toast.error("Poll id is missing.");
+        setError("Poll id is missing.");
+        setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
+      setError(null);
       try {
         const [pollResponse, analyticsResponse] = await Promise.allSettled([
           getPollById(id),
@@ -112,7 +174,13 @@ export default function PollDetails() {
             (pollResponse.value as any).data || pollResponse.value;
           setPoll(pollData as ApiPoll);
         } else {
-          throw pollResponse.reason;
+          const errorMsg =
+            (pollResponse.reason as any)?.message ||
+            "Poll details could not be loaded.";
+          setError(errorMsg);
+          setPoll(null);
+          toast.error(errorMsg);
+          return;
         }
 
         if (analyticsResponse.status === "fulfilled") {
@@ -123,12 +191,14 @@ export default function PollDetails() {
           setAnalytics(null);
         }
       } catch (error: any) {
-        console.error("Error loading poll details:", error);
-        toast.error(
+        const errorMsg =
           error?.response?.data?.message ||
-            error?.message ||
-            "Failed to load poll details.",
-        );
+          error?.message ||
+          "Poll details could not be loaded.";
+        setError(errorMsg);
+        setPoll(null);
+        console.error("Error loading poll details:", error);
+        toast.error(errorMsg);
       } finally {
         setIsLoading(false);
       }
@@ -254,26 +324,35 @@ export default function PollDetails() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6 animate-pulse pb-20">
-        <div className="h-24 rounded-2xl border border-border bg-muted/20" />
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <div className="h-52 rounded-2xl border border-border bg-muted/20" />
-            <div className="h-72 rounded-2xl border border-border bg-muted/20" />
-          </div>
-          <div className="space-y-6">
-            <div className="h-56 rounded-2xl border border-border bg-muted/20" />
-            <div className="h-44 rounded-2xl border border-border bg-muted/20" />
-          </div>
-        </div>
+      <div className="max-w-5xl mx-auto min-h-[60vh] flex items-center justify-center pb-20">
+        <Loader className="scale-125" label="Loading poll details" />
       </div>
     );
   }
 
-  if (!poll) {
+  if (!poll && !isLoading) {
     return (
-      <div className="max-w-5xl mx-auto py-20 text-center text-muted-foreground">
-        Poll details could not be loaded.
+      <div className="max-w-5xl mx-auto py-20 px-4">
+        <div className="text-center space-y-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">
+              Poll details could not be loaded.
+            </h2>
+            <p className="text-muted-foreground">
+              {error ||
+                "The poll you're looking for doesn't exist or you don't have permission to view it."}
+            </p>
+          </div>
+          <Button asChild variant="outline">
+            <Link to="/app/polls">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Polls
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -281,6 +360,13 @@ export default function PollDetails() {
   const analyticsData: PollAnalytics = analytics ?? {
     pollId: poll._id,
     title: poll.title,
+    isResponseLimited: poll.isResponseLimited,
+    responseLimit: poll.responseLimit ?? null,
+    responseLimitReached: !!(
+      poll.isResponseLimited &&
+      poll.responseLimit &&
+      (poll.totalResponses || 0) >= poll.responseLimit
+    ),
     totalResponses: poll.totalResponses || 0,
     completionRate: 0,
     completionPercentage: 0,
@@ -299,8 +385,12 @@ export default function PollDetails() {
       })),
     })),
     timeline: { hourly: [], daily: [] },
+    allResponses: [],
     recentResponses: [],
   };
+
+  const responseDetails =
+    analyticsData.allResponses ?? analyticsData.recentResponses ?? [];
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
@@ -328,6 +418,150 @@ export default function PollDetails() {
               Edit
             </Link>
           </Button>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="secondary" className="gap-2">
+                <BarChart2 className="w-4 h-4" />
+                Responses ({responseDetails.length})
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Poll responses</DialogTitle>
+                <DialogDescription>
+                  View every response with the respondent name, profile photo,
+                  selected answers, IP fallback, and timestamp.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="mt-2 flex-1 overflow-y-auto space-y-4 pr-1">
+                {responseDetails.length ? (
+                  responseDetails.map((response, index) => {
+                    const displayName =
+                      response.userName ||
+                      response.ipAddress ||
+                      response.responder ||
+                      "Unknown responder";
+                    const answerRows = (response.answers || []).map(
+                      (answer) => ({
+                        questionText:
+                          questionLookup.get(answer.questionId) || "Question",
+                        selectedOption: answer.selectedOption,
+                        opinion: answer.opinion,
+                      }),
+                    );
+
+                    return (
+                      <div
+                        key={
+                          response.responseId ||
+                          `${response.respondedAt}-${index}`
+                        }
+                        className="rounded-2xl border border-border bg-muted/10 p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar className="size-12 border border-border">
+                              <AvatarImage
+                                src={response.userAvatar || undefined}
+                                alt={displayName}
+                              />
+                              <AvatarFallback>
+                                {displayName
+                                  .split(" ")
+                                  .map((part) => part[0])
+                                  .filter(Boolean)
+                                  .slice(0, 2)
+                                  .join("")
+                                  .toUpperCase() || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold truncate">
+                                  {displayName}
+                                </p>
+                                <Badge variant="outline">
+                                  {response.completionPercentage}% complete
+                                </Badge>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                <span>
+                                  {response.userName
+                                    ? "Logged in user"
+                                    : "IP identified"}
+                                </span>
+                                {response.ipAddress ? (
+                                  <span>• IP: {response.ipAddress}</span>
+                                ) : null}
+                                <span>
+                                  • {formatDate(response.respondedAt)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span>
+                              {response.isAnonymous
+                                ? "Anonymous"
+                                : "Identified"}
+                            </span>
+                            {response.responderId ? (
+                              <span>• User ID: {response.responderId}</span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-2">
+                          {answerRows.length ? (
+                            answerRows.map((answer, answerIndex) => (
+                              <div
+                                key={`${response.responseId || index}-${answerIndex}`}
+                                className="space-y-2"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background/70 px-3 py-2 text-sm">
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate">
+                                      {answer.questionText}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Selected response
+                                    </p>
+                                  </div>
+                                  <Badge
+                                    variant="secondary"
+                                    className="shrink-0"
+                                  >
+                                    {answer.selectedOption}
+                                  </Badge>
+                                </div>
+                                {answer.opinion ? (
+                                  <p className="px-3 text-xs whitespace-pre-wrap text-muted-foreground">
+                                    {answer.opinion}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-xl border border-dashed border-border bg-background/60 px-3 py-4 text-sm text-muted-foreground">
+                              No answers found for this response.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                    No responses yet.
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {!poll.isPublished ? (
             <Button onClick={() => setPublishMode("publish")}>Publish</Button>
           ) : !poll.resultsPublished ? (
@@ -518,6 +752,30 @@ export default function PollDetails() {
                 <span className="text-muted-foreground">Published</span>
                 <span>{poll.isPublished ? "Yes" : "No"}</span>
               </div>
+              {analyticsData.isResponseLimited && (
+                <>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">
+                      Response Limit
+                    </span>
+                    <span>{analyticsData.responseLimit ?? "—"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Limit Status</span>
+                    <span
+                      className={
+                        analyticsData.responseLimitReached
+                          ? "text-red-500 font-medium"
+                          : "text-foreground"
+                      }
+                    >
+                      {analyticsData.responseLimitReached
+                        ? "Response limit has been reached"
+                        : `${Math.max((analyticsData.responseLimit || 0) - analyticsData.totalResponses, 0)} remaining`}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Results Published</span>
                 <span>{poll.resultsPublished ? "Yes" : "No"}</span>
@@ -637,6 +895,23 @@ export default function PollDetails() {
                     {analyticsData.totalResponses}
                   </p>
                 </div>
+                {analyticsData.isResponseLimited && (
+                  <div className="rounded-xl border border-border bg-muted/30 p-3 col-span-2">
+                    <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                      Response Limit
+                    </p>
+                    <p className="mt-1 text-xl font-bold">
+                      {analyticsData.responseLimit ?? "—"}
+                    </p>
+                    <p
+                      className={`mt-1 text-xs ${analyticsData.responseLimitReached ? "text-red-500" : "text-muted-foreground"}`}
+                    >
+                      {analyticsData.responseLimitReached
+                        ? "Response limit has been reached"
+                        : `${Math.max((analyticsData.responseLimit || 0) - analyticsData.totalResponses, 0)} responses remaining`}
+                    </p>
+                  </div>
+                )}
                 <div className="rounded-xl border border-border bg-muted/30 p-3">
                   <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                     Completion
