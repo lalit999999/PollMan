@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import PollFormBuilder from "../../components/polls/PollFormBuilder";
+import { Loader } from "../../components/ui/Loader";
 import {
   getPollById,
   publishPoll,
@@ -105,18 +106,8 @@ export default function EditPoll() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-pulse">
-        <div className="h-24 rounded-2xl border border-border bg-muted/20" />
-        <div className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
-          <div className="space-y-4">
-            <div className="h-48 rounded-2xl border border-border bg-muted/20" />
-            <div className="h-72 rounded-2xl border border-border bg-muted/20" />
-          </div>
-          <div className="space-y-4">
-            <div className="h-56 rounded-2xl border border-border bg-muted/20" />
-            <div className="h-36 rounded-2xl border border-border bg-muted/20" />
-          </div>
-        </div>
+      <div className="max-w-4xl mx-auto min-h-[60vh] flex items-center justify-center pb-20">
+        <Loader className="scale-125" label="Loading poll editor" />
       </div>
     );
   }

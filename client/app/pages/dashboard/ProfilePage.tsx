@@ -19,6 +19,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Badge } from "../../components/ui/badge";
 import { BarChart3, Edit3, Users } from "lucide-react";
+import { Loader } from "../../components/ui/Loader";
 
 type ProfileSummary = {
   user: {
@@ -101,7 +102,11 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return <div className="p-8 text-muted-foreground">Loading profile...</div>;
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[40vh]">
+        <Loader className="scale-125" label="Loading profile" />
+      </div>
+    );
   }
 
   const profile = summary?.user || user;

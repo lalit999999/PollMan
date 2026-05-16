@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import { Loader } from "../../components/ui/Loader";
 import {
   BarChart,
   Bar,
@@ -58,9 +59,7 @@ export default function PublicResults() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background p-4 sm:p-8 flex flex-col items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          Loading results...
-        </div>
+        <Loader className="scale-125" label="Loading results" />
       </div>
     );
   }

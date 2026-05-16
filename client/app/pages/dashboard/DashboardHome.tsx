@@ -29,6 +29,7 @@ import { getDashboardOverview } from "../../services/pollService";
 import { toast } from "sonner";
 import { connectSocket, disconnectSocket } from "../../lib/socketClient";
 import { useAuth } from "../../context/AuthContext";
+import { Loader } from "../../components/ui/Loader";
 
 function formatTime(value?: string) {
   if (!value) return "—";
@@ -266,8 +267,8 @@ export default function DashboardHome() {
           </CardHeader>
           <CardContent className="flex-1 flex flex-col gap-4">
             {loading ? (
-              <div className="text-sm text-muted-foreground">
-                Loading recent polls...
+              <div className="flex items-center justify-center py-10">
+                <Loader label="Loading recent polls" />
               </div>
             ) : overview?.recentPolls?.length ? (
               overview.recentPolls.map((poll: any) => {
@@ -327,8 +328,8 @@ export default function DashboardHome() {
           </CardHeader>
           <CardContent className="space-y-3">
             {loading ? (
-              <div className="text-sm text-muted-foreground">
-                Loading activity...
+              <div className="flex items-center justify-center py-10">
+                <Loader label="Loading activity" />
               </div>
             ) : overview?.recentActivity?.length ? (
               overview.recentActivity.slice(0, 8).map((item: any) => (

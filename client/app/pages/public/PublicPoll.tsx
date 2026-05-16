@@ -8,6 +8,7 @@ import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
 import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
+import { Loader } from "../../components/ui/Loader";
 import "highlight.js/styles/atom-one-dark.css";
 import {
   CheckCircle2,
@@ -276,10 +277,7 @@ export default function PublicPoll() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-muted animate-pulse mx-auto" />
-          <p className="text-muted-foreground">Loading poll...</p>
-        </div>
+        <Loader className="scale-125" label="Loading poll" />
       </div>
     );
   }

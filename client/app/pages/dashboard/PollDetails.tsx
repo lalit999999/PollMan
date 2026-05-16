@@ -58,6 +58,7 @@ import {
 } from "../../services/pollService";
 import { useAuth } from "../../context/AuthContext";
 import { connectSocket, disconnectSocket } from "../../lib/socketClient";
+import { Loader } from "../../components/ui/Loader";
 
 type PollAnalytics = {
   pollId: string;
@@ -323,18 +324,8 @@ export default function PollDetails() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6 animate-pulse pb-20">
-        <div className="h-24 rounded-2xl border border-border bg-muted/20" />
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <div className="h-52 rounded-2xl border border-border bg-muted/20" />
-            <div className="h-72 rounded-2xl border border-border bg-muted/20" />
-          </div>
-          <div className="space-y-6">
-            <div className="h-56 rounded-2xl border border-border bg-muted/20" />
-            <div className="h-44 rounded-2xl border border-border bg-muted/20" />
-          </div>
-        </div>
+      <div className="max-w-5xl mx-auto min-h-[60vh] flex items-center justify-center pb-20">
+        <Loader className="scale-125" label="Loading poll details" />
       </div>
     );
   }
